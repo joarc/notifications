@@ -7,6 +7,7 @@
 var express = require("express");
 var session = require("express-session");
 var bodyParser = require('body-parser');
+var pathlib = require("path");
 
 // Start express
 var app = express();
@@ -20,42 +21,58 @@ app.use("/static", express.static("static"));
 
 // Settings
 //app.use(express.json());
-app.use(session({secret: "asdfasdf", resave: true, saveUninitialized: false, cookie: {maxAge: 60000}}));
+app.use(session({secret: "asdfasdf", resave: true, saveUninitialized: false, cookie: {maxAge: 600000}}));
 app.disable("x-powered-by");
 app.enable("trust proxy");
 app.locals.title = "notfications";
 app.locals.email = "joarc@joarc.se";
+
+// Path
+var path = pathlib.join(__dirname+"/public/");
 
 // Router
 /*app.get('/', function (req, res) {
   res.sendFile("index.html", {root: __dirname + "/public/"});
 });*/
 
+app.get("/logout", function(req, res){
+  req.session.loggedin = false;
+  req.session.logindata = {};
+  res.redirect("/");
+})
+
 app.get("/login", function(req, res){
-  res.sendFile("login.html", {root: __dirname + "/public/"});
+  res.sendFile(path+"login.html");
 });
 app.post("/login", function(req, res, next){
   var login = {username: req.body.username, password: req.body.password};
+  req.session.logindata = login;
   console.log(login);
   next();
 }, function(req, res){
   req.session.loggedin = true;
-  res.send("Success");
+  console.log(req.session.loggedin);
+  req.session.alert = {type: "success", msg: "Login Successfull"};
+  res.redirect("/");
+  //res.send("Success<br>"+'<a href="/">Home</a>');
 });
-
 
 app.get("/", function(req, res){
   if (req.session.loggedin !== undefined) {
-    res.send("Logged in: ");
-    console.log(req.session.loggedin);
     if (req.session.loggedin) {
-      res.send("true");
+      res.sendFile(path+"index_loggedin.html");
     } else {
-      res.send("false");
+      res.sendFile(path+"index_notloggedin.html");
     }
   } else {
-    res.send("Logged in: false");
+    res.sendFile(path+"index_notloggedin.html");
   }
+});
+
+app.get("/data", function(req, res){
+  var data = {username: req.session.logindata.username, alert:req.session.alert};
+  req.session.alert = {type: "none", msg: ""};
+  res.send(data);
 });
 
 app.listen(3000, function () {

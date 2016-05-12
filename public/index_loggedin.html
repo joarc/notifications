@@ -1,0 +1,58 @@
+<html>
+  <head>
+    <title>Express HTML</title>
+    <script src="/static/js/jquery.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="/static/css/index_loggedin.css">
+  </head>
+  <body>
+    <div id="alert" class="alert-hidden"></div>
+    <div style="margin:100px;">
+      <nav class="navbar navbar-inverse navbar-static-top">
+    <div class="container">
+      <a class="navbar-brand" href="/">Express HTML</a>
+      <ul class="nav navbar-nav">
+        <li class="active">
+          <a href="/">Home</a>
+        </li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="navbar-text">Logged in as <span id="username"></span></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+      <div class="jumbotron"  style="padding:40px;">
+        <h1>Hello, world!</h1>
+        <p>This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.</p>
+        <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a></p>
+      </div>
+    </div>
+    <script>
+    function update() {
+      var req = $.ajax({url: "/data", method: "GET", dataType: "json"});
+      req.done(function(res){
+        console.log(res);
+        $("#username").text(res.username);
+        if(res.alert.type != "none") {
+          $("#alert").removeClass("alert-hidden alert alert-success alert-danger alert-warning alert-info");
+          $("#alert").addClass("alert alert-"+res.alert.type);
+          $("#alert").text(res.alert.msg);
+          $("#alert").fadeIn("slow");
+        } else {
+          $("#alert").fadeOut("slow");
+        }
+      });
+      console.log("1");
+    }
+    $(window).load(function(){
+      update();
+      setInterval(function(){
+        update();
+      }, 1000*10);
+    })
+    </script>
+  </body>
+</html>
