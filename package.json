@@ -1,0 +1,29 @@
+{
+  "name": "notifications",
+  "version": "1.0.0",
+  "description": "N! is a simple notifications handler",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joarc/notifications.git"
+  },
+  "keywords": [
+    "notifications",
+    "messages",
+    "alerts"
+  ],
+  "author": "Joarc",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joarc/notifications/issues"
+  },
+  "homepage": "https://github.com/joarc/notifications#readme",
+  "dependencies": {
+    "body-parser": "^1.15.1",
+    "express": "^4.13.4",
+    "express-session": "^1.13.0"
+  }
+}
