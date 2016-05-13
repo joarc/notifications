@@ -81,6 +81,8 @@ app.get("/data", function(req, res){
   }
 });
 
+app.use(function(req, res, next){
+  res.status(404).sendFile(path+"404.html");
 });
 
 app.listen(3000, function () {
