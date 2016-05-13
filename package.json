@@ -23,6 +23,7 @@
   "homepage": "https://github.com/joarc/notifications#readme",
   "dependencies": {
     "body-parser": "^1.15.1",
+    "casual": "^1.5.3",
     "express": "^4.13.4",
     "express-session": "^1.13.0",
     "nodejs-websocket": "^1.6.0"

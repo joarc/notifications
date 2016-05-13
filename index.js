@@ -9,6 +9,7 @@ var session = require("express-session");
 var bodyParser = require('body-parser');
 var pathlib = require("path");
 var ws = require("nodejs-websocket");
+var casual = require("casual");
 
 // Start express
 var app = express();
@@ -28,8 +29,19 @@ app.enable("trust proxy");
 app.locals.title = "notfications";
 app.locals.email = "joarc@joarc.se";
 
-// Path
+// var
 var path = pathlib.join(__dirname+"/public/");
+var loggedInUsers = [];
+var notificationsToUsers = [];
+
+// Generic Functions
+function grs(length) {
+  var s = "";
+  for (var i = 0; i <= length; i++) {
+    s = s+casual.letter;
+  }
+  return s;
+}
 
 // Router
 /*app.get('/', function (req, res) {
@@ -39,23 +51,21 @@ var path = pathlib.join(__dirname+"/public/");
 app.get("/logout", function(req, res){
   req.session.loggedin = false;
   req.session.logindata = {};
+  req.session.wskey = "";
   res.redirect("/");
 })
 
 app.get("/login", function(req, res){
   res.sendFile(path+"login.html");
 });
-app.post("/login", function(req, res, next){
-  var login = {username: req.body.username, password: req.body.password};
+app.post("/login", function(req, res){
+  var login = {username: req.body.username, password: req.body.password, key: grs(100)};
   req.session.logindata = login;
+  loggedInUsers[login.username] = login;
   console.log(login);
-  next();
-}, function(req, res){
   req.session.loggedin = true;
-  console.log(req.session.loggedin);
-  req.session.alert = {type: "success", msg: "Login Successfull"};
+  notificationsToUsers[req.body.username] = {type: "success", msg: "Login Successfull"};
   res.redirect("/");
-  //res.send("Success<br>"+'<a href="/">Home</a>');
 });
 
 app.get("/", function(req, res){
@@ -72,8 +82,7 @@ app.get("/", function(req, res){
 
 app.get("/data", function(req, res){
   if (req.session.loggedin) {
-    var data = {username: req.session.logindata.username, alert:req.session.alert};
-    req.session.alert = {type: "none", msg: ""};
+    var data = {username: req.session.logindata.username, key: req.session.logindata.key};
     res.send(data);
   } else {
     var error = {type: "error", msg: "you are not logged in!"};
@@ -85,22 +94,40 @@ app.use(function(req, res, next){
   res.status(404).sendFile(path+"404.html");
 });
 
-app.listen(3000, function () {
-  console.log('Notifications (N!) is started on port 3000');
-});
-
 // Websocket Server
 var server = ws.createServer(function(conn){
-  connection.username = null;
+  //console.log(conn);
+  conn.authenticated = false;
+  conn.userdata = null;
   conn.on("text", function(str){
+    str = JSON.parse(str);
     console.log(str);
     if (str.type == "authenticate") {
-    } else if (str.type == "debug_alert") {
-      conn.send({alert: {type:"info",msg:"Debug Alert"}})
+      if (loggedInUsers[str.msg.username] != null) {
+        if (loggedInUsers[str.msg.username].key == str.msg.key) {
+          conn.authenticated = true;
+          conn.userdata = loggedInUsers[str.msg.username];
+        }
+      }
+    } else {
+      if (conn.authenticated == true) {
+        if (str.type == "debug_alert") {
+          conn.send({alert: {type:"info",msg:"Debug Alert"}})
+        }
+      }
     }
   });
   conn.on("close", function(code, reason){
     console.log("Connection closed");
-    connection.username = null;
-  })
-})
+    conn.username = null;
+    conn.userdata = null;
+  });
+});
+
+// Start listening
+app.listen(8080, function (){
+  console.log('Express Server started on port 8080');
+});
+server.listen(8081, function(){
+  console.log("WebSocket Server started on port 8081");
+});

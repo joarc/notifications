@@ -23,6 +23,7 @@
           <ul class="nav navbar-nav">
             <li><a href="#about">About</a></li>
             <li><a href="#pricing">Pricing</a></li>
+            <li><button type="button" onclick="send('debug_alert', '');">Debug</button></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
             <li class="dropdown">
@@ -45,11 +46,31 @@
       </div>
     </div>
     <script>
-    function send(type, msg) {
-      $.ajax({url: "/send", method: "POST", dataType: "json"}).done(function(res){
-        
+    var ws = new WebSocket("ws://localhost:8081");
+    ws.onopen = function(e){
+      $.ajax({url: "/data", method: "GET", dataType: "json"}).done(function(res){
+        send("authenticate", {username: res.username, key: res.key});
       });
     }
+
+    function send(type, msg) {
+      ws.send(JSON.stringify({type: type, msg: msg}));
+    }
+
+    ws.onmessage = function(e){
+      console.log(e);
+      if (e.type == "alert") {
+        if(e.alert.type != "none") {
+          $("#alert").removeClass("alert-hidden alert-success alert-danger alert-warning alert-info");
+          $("#alert").addClass("alert-"+e.alert.type);
+          $("#alert-msg").text(e.alert.msg);
+          $("#alert").show();
+        } else {
+          $("#alert").fadeOut(3000);
+        }
+      }
+    }
+
     function update() {
       var req = $.ajax({url: "/data", method: "GET", dataType: "json"});
       req.done(function(res){
@@ -64,14 +85,7 @@
           $("#alert").fadeOut(3000);
         }
       });
-      //console.log("1");
     }
-    $(window).load(function(){
-      update();
-      setInterval(function(){
-        update();
-      }, 1000*10);
-    })
     </script>
   </body>
 </html>
