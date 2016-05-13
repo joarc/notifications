@@ -8,6 +8,7 @@ var express = require("express");
 var session = require("express-session");
 var bodyParser = require('body-parser');
 var pathlib = require("path");
+var ws = require("nodejs-websocket");
 
 // Start express
 var app = express();
@@ -70,11 +71,34 @@ app.get("/", function(req, res){
 });
 
 app.get("/data", function(req, res){
-  var data = {username: req.session.logindata.username, alert:req.session.alert};
-  req.session.alert = {type: "none", msg: ""};
-  res.send(data);
+  if (req.session.loggedin) {
+    var data = {username: req.session.logindata.username, alert:req.session.alert};
+    req.session.alert = {type: "none", msg: ""};
+    res.send(data);
+  } else {
+    var error = {type: "error", msg: "you are not logged in!"};
+    res.send(error);
+  }
+});
+
 });
 
 app.listen(3000, function () {
   console.log('Notifications (N!) is started on port 3000');
 });
+
+// Websocket Server
+var server = ws.createServer(function(conn){
+  connection.username = null;
+  conn.on("text", function(str){
+    console.log(str);
+    if (str.type == "authenticate") {
+    } else if (str.type == "debug_alert") {
+      conn.send({alert: {type:"info",msg:"Debug Alert"}})
+    }
+  });
+  conn.on("close", function(code, reason){
+    console.log("Connection closed");
+    connection.username = null;
+  })
+})

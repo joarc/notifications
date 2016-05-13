@@ -24,6 +24,7 @@
   "dependencies": {
     "body-parser": "^1.15.1",
     "express": "^4.13.4",
-    "express-session": "^1.13.0"
+    "express-session": "^1.13.0",
+    "nodejs-websocket": "^1.6.0"
   }
 }
