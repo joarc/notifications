@@ -23,16 +23,19 @@
           <ul class="nav navbar-nav">
             <li><a href="#about">About</a></li>
             <li><a href="#pricing">Pricing</a></li>
-            <li><button type="button" onclick="send('debug_alert', '');">Debug</button></li>
+            <li><button type="button" onclick="send('debug_alert', 'info');">Debug</button></li>
+            <li><button type="button" onclick="send('debug_alert', 'danger');">Debug</button></li>
+            <li><button type="button" onclick="send('debug_alert', 'success');">Debug</button></li>
+            <li><button type="button" onclick="send('debug_alert', 'warning');">Debug</button></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
+            <li><a href="/apidocs">API Documentation</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Logged in as <span id="username"></span> <span class="caret"></span></a>
               <ul class="dropdown-menu">
-                <li><a href="/profile">Profile</a></li>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/apidocs">API Documentation</a></li>
-                <li role="separator" class="divider"></li>
+                <li><a href="/profile" class="text-center">Profile <span class="glyphicon glyphicon-user"></span></a></li>
+                <li class="divider"></li>
                 <li><a href="/logout" class="text-center">Logout <span class="glyphicon glyphicon-log-out"></span></a></li>
               </ul>
             </li>
@@ -42,35 +45,65 @@
     </nav>
     <div class="container">
       <div class="col-md-8 col-md-offset-2">
-        <div id="alert" class="alert alert-hidden alert-dismissible"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span id="alert-msg"></span></div>
+        <div id="alert-feed">
+        </div>
+        <!--
+        <div id="alert" class="alert alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <span id="alert-msg"></span>
+        </div>
+        -->
       </div>
     </div>
     <script>
+    // Websocket
     var ws = new WebSocket("ws://localhost:8081");
-    ws.onopen = function(e){
-      $.ajax({url: "/data", method: "GET", dataType: "json"}).done(function(res){
-        send("authenticate", {username: res.username, key: res.key});
-      });
-    }
-
     function send(type, msg) {
       ws.send(JSON.stringify({type: type, msg: msg}));
     }
-
+    function alert(alert) {
+      var icon = "";
+      switch (alert.type) {
+        case "success": icon = '<span class="glyphicon glyphicon-ok-sign"></span> '; break;
+        case "info":    icon = '<span class="glyphicon glyphicon-info-sign"></span> '; break;
+        case "warning": icon = '<span class="glyphicon glyphicon-exclamation-sign"></span> '; break;
+        case "danger":  icon = '<span class="glyphicon glyphicon-minus-sign"></span> '; break;
+        default:        icon = '<span class="glyphicon glyphicon-question-sign"></span> '; break;
+      }
+      $("#alert-feed").append('<div id="alert-'+alert.id+'" class="alert alert-dismissible alert-'+alert.type+'"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>'+icon+alert.msg+'</div>');
+      $("#alert-"+alert.id).hide();
+      $("#alert-"+alert.id).fadeIn(1000, function(){
+        setTimeout(function(){
+          $("#alert-"+alert.id).fadeOut(2000, function(){
+            $(this).remove();
+          });
+        }, 5000);
+      });
+    }
+    ws.onopen = function(e){
+      $.ajax({url: "/data", method: "GET", dataType: "json"}).done(function(res){
+        $("#username").text(res.username);
+        send("authenticate", {username: res.username, key: res.key});
+      });
+    }
     ws.onmessage = function(e){
-      console.log(e);
-      if (e.type == "alert") {
-        if(e.alert.type != "none") {
-          $("#alert").removeClass("alert-hidden alert-success alert-danger alert-warning alert-info");
-          $("#alert").addClass("alert-"+e.alert.type);
-          $("#alert-msg").text(e.alert.msg);
-          $("#alert").show();
-        } else {
-          $("#alert").fadeOut(3000);
+      var data = JSON.parse(e.data);
+      console.log(data);
+      if (data.type == "alert") {
+        if (alert.type != "none") {
+          alert(data.alert);
         }
       }
     }
 
+    // On page Load
+    $(window).on('load', function(e){
+      $("#alert").hide();
+    })
+
+    // Old Function
     function update() {
       var req = $.ajax({url: "/data", method: "GET", dataType: "json"});
       req.done(function(res){

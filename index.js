@@ -110,12 +110,18 @@ var server = ws.createServer(function(conn){
         }
       }
     } else {
+      var alertId = casual.integer(1,99999999);
       if (conn.authenticated == true) {
         if (str.type == "debug_alert") {
-          conn.send({alert: {type:"info",msg:"Debug Alert"}})
+          if (str.msg != "") {
+            conn.send(JSON.stringify({type: "alert", alert: {type:str.msg,msg:"Debug Alert",id:alertId}}));
+          } else {
+            conn.send(JSON.stringify({type: "alert", alert: {type:"info",msg:"Debug Alert",id:alertId}}));  
+          }
         }
-      }
-    }
+      } else {
+        conn.send(JSON.stringify({type: "alert", alert: {type:"danger",msg:"Error: Not Authenticated!",id:alertId}}));
+      }    }
   });
   conn.on("close", function(code, reason){
     console.log("Connection closed");
