@@ -5,7 +5,8 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
     <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">-->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="/static/css/index_loggedin.css">
+    <link rel="stylesheet" href="/static/css/index_notloggedin.css">
+    <link rel="stylesheet" href="/static/css/global.css">
   </head>
   <body>
     <nav class="navbar navbar-default navbar-static-top">
@@ -25,12 +26,13 @@
             <li><a href="#pricing">Pricing</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="/login">Login</a></li>
+            <li><a href="#login" data-toggle="modal" data-target="#login">Login</a></li>
           </ul>
         </div>
       </div>
     </nav>
     <div class="container">
+      <div class="alert alert-danger alert-dismissible hidden" id="login-error"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="glyphicon glyphicon-minus-sign"></span> Login Failed: Incorrect username or password!</div>
       <div class="row">
         <div class="jumbotron">
           <div class="col-md-8 col-md-offset-2">
@@ -41,5 +43,53 @@
         </div>
       </div>
     </div>
+    <div class="modal fade" id="login" tabindex="-1" role="dialog" aria-labelledby="Login">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="Login">Login</h4>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="/login">
+              <label for="login-username" class="sr-only">Username: </label>
+              <input type="text" id="login-username" class="form-control" placeholder="Username" name="username" required autofocus><br>
+              <label for="login-password" class="sr-only">Password</label>
+              <input type="password" id="login-password" class="form-control" placeholder="Password" name="password" required><br>
+              <button class="btn btn-lg btn-primary btn-block" type="button" onclick="login();">Sign in</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+    $('#login').on('shown.bs.modal', function(){
+      $('#login-username').focus();
+    });
+    function login(){
+      var loginusername = $("#login-username").val();
+      var loginpassword = $("#login-password").val();
+      //var logindata = JSON.stringify({username: loginusername, password: loginpassword});
+      var logindata = {username: loginusername, password: loginpassword};
+      $("#login").modal("hide");
+      $("#login-password").attr("value", false);
+      console.log("before ajax");
+      var ajax = $.ajax({url: "/login", method: "POST", dataType: "json", data: logindata});
+
+      ajax.always(function(res){
+        console.log(res);
+        console.log("test");
+        if (res.success) {
+          window.location.reload(true);
+        } else {
+          $("#login-error").fadeIn(1000, function(){
+            setTimeout(function(){
+              $("#login-error").fadeOut(2000);
+            }, 4000);
+          });
+        }
+      });
+    }
+    </script>
   </body>
 </html>

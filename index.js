@@ -59,12 +59,15 @@ app.get("/login", function(req, res){
   res.sendFile(path+"login.html");
 });
 app.post("/login", function(req, res){
+  console.log(req.body);
   var login = {username: req.body.username, password: req.body.password, key: grs(100)};
+  if (login.username != "joarc" && login.password != "asdfasdf") return;
   req.session.logindata = login;
   loggedInUsers[login.username] = login;
   console.log(login);
   req.session.loggedin = true;
   notificationsToUsers[req.body.username] = {type: "success", msg: "Login Successfull"};
+  //console.log(req);
   res.redirect("/");
 });
 
@@ -116,7 +119,7 @@ var server = ws.createServer(function(conn){
           if (str.msg != "") {
             conn.send(JSON.stringify({type: "alert", alert: {type:str.msg,msg:"Debug Alert",id:alertId}}));
           } else {
-            conn.send(JSON.stringify({type: "alert", alert: {type:"info",msg:"Debug Alert",id:alertId}}));  
+            conn.send(JSON.stringify({type: "alert", alert: {type:"info",msg:"Debug Alert",id:alertId}}));
           }
         }
       } else {
