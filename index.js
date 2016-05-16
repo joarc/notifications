@@ -32,7 +32,6 @@ app.locals.email = "joarc@joarc.se";
 // var
 var path = pathlib.join(__dirname+"/public/");
 var loggedInUsers = [];
-var notificationsToUsers = [];
 
 // Generic Functions
 function grs(length) {
@@ -41,6 +40,9 @@ function grs(length) {
     s = s+casual.letter;
   }
   return s;
+}
+function addAlert(type, msg, to){
+  loggedInUsers[to][notifications][] = {type: type, msg: msg};
 }
 
 // Router
@@ -59,16 +61,18 @@ app.get("/login", function(req, res){
   res.sendFile(path+"login.html");
 });
 app.post("/login", function(req, res){
-  console.log(req.body);
   var login = {username: req.body.username, password: req.body.password, key: grs(100)};
-  if (login.username != "joarc" && login.password != "asdfasdf") return;
-  req.session.logindata = login;
-  loggedInUsers[login.username] = login;
   console.log(login);
-  req.session.loggedin = true;
-  notificationsToUsers[req.body.username] = {type: "success", msg: "Login Successfull"};
-  //console.log(req);
-  res.redirect("/");
+  if (login.username == "joarc" && login.password == "asdfasdf") {
+    req.session.logindata = login;
+    loggedInUsers[login.username] = login;
+    req.session.loggedin = true;
+    //notificationsToUsers[req.body.username] = {type: "success", msg: "Login Successfull"};
+    res.send({success: true});
+  } else {
+    res.send({success: false});
+  }
+  //res.redirect("/");
 });
 
 app.get("/", function(req, res){
@@ -113,18 +117,12 @@ var server = ws.createServer(function(conn){
         }
       }
     } else {
-      var alertId = casual.integer(1,99999999);
       if (conn.authenticated == true) {
         if (str.type == "debug_alert") {
-          if (str.msg != "") {
-            conn.send(JSON.stringify({type: "alert", alert: {type:str.msg,msg:"Debug Alert",id:alertId}}));
-          } else {
-            conn.send(JSON.stringify({type: "alert", alert: {type:"info",msg:"Debug Alert",id:alertId}}));
-          }
+          conn.send({alert: {type:"info",msg:"Debug Alert"}})
         }
-      } else {
-        conn.send(JSON.stringify({type: "alert", alert: {type:"danger",msg:"Error: Not Authenticated!",id:alertId}}));
-      }    }
+      }
+    }
   });
   conn.on("close", function(code, reason){
     console.log("Connection closed");
