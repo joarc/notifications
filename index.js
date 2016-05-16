@@ -41,9 +41,9 @@ function grs(length) {
   }
   return s;
 }
-function addAlert(type, msg, to){
-  loggedInUsers[to][notifications][] = {type: type, msg: msg};
-}
+/*function addAlert(type, msg, to){
+  loggedInUsers[to][notifications][loggedInUsers[to][notifications].length+1] = {type: type, msg: msg};
+}*/
 
 // Router
 /*app.get('/', function (req, res) {
@@ -119,7 +119,7 @@ var server = ws.createServer(function(conn){
     } else {
       if (conn.authenticated == true) {
         if (str.type == "debug_alert") {
-          conn.send({alert: {type:"info",msg:"Debug Alert"}})
+          conn.send({type: "alert", alert: {type:"info",msg:"Debug Alert"}});
         }
       }
     }

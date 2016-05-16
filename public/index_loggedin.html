@@ -52,11 +52,47 @@
     </div>
     <script>
     // Websocket
-    var ws = new WebSocket("ws://localhost:8081");
+    var ws;
+    var loc = "ws://localhost:8081";
+    function reload(){
+      document.location.reload(true);
+    }
+    function start(loc) {
+      ws = new WebSocket(loc);
+      ws.onopen = function(e){
+        $.get("/data", function(res){
+          console.log(res);
+          $("#username").text(res.username);
+          send("authenticate", {username: res.username, key: res.key});
+        });
+      }
+      ws.onmessage = function(e){
+        var data = JSON.parse(e.data);
+        console.log(data);
+        if (data.type == "alert") {
+          if (alert.type != "none") {
+            alert(data.alert);
+          }
+        } else if (data.type == "error") {
+          alert({type:"danger", msg:data.msg, id:Math.random()*10+1});
+        }
+      }
+      ws.onerror = function(e){
+        //alert({type:"warning", msg:"Connection Error: WebSocket encountered an error!",id:Math.floor(Math.random()*10+1)});
+      }
+      ws.onclose = function(e){
+        alert({type:"warning", msg:"Lost connection to server. Reconnecting...",id:Math.floor(Math.random()*10+1)});
+        setTimeout(function(){
+          start(loc);
+        },6600);
+      }
+    }
+    start(loc);
     function send(type, msg) {
       ws.send(JSON.stringify({type: type, msg: msg}));
     }
     function alert(alert) {
+      console.log(alert);
       var icon = "";
       switch (alert.type) {
         case "success": icon = '<span class="glyphicon glyphicon-ok-sign"></span> '; break;
@@ -74,22 +110,6 @@
           });
         }, 5000);
       });
-    }
-    ws.onopen = function(e){
-      $.get("/data", function(res){
-        console.log(res);
-        $("#username").text(res.username);
-        send("authenticate", {username: res.username, key: res.key});
-      });
-    }
-    ws.onmessage = function(e){
-      var data = JSON.parse(e.data);
-      console.log(data);
-      if (data.type == "alert") {
-        if (alert.type != "none") {
-          alert(data.alert);
-        }
-      }
     }
     </script>
   </body>
