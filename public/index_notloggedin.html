@@ -88,6 +88,7 @@
           window.location.reload(true);
         } else {
           $("#login-error").removeClass("hidden").hide();
+          $("#login-error").text(res.msg);
           $("#login-error").fadeIn(1000, function(){
             setTimeout(function(){
               $("#login-error").fadeOut(2000);

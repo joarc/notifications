@@ -28,6 +28,7 @@
     "cookie-parser": "^1.4.1",
     "express": "^4.13.4",
     "express-session": "^1.13.0",
+    "mongodb": "^2.1.19",
     "nodejs-websocket": "^1.6.0"
   }
 }
