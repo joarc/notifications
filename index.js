@@ -20,6 +20,7 @@ var app = express();
 // var
 var path = pathlib.join(__dirname+"/public/");
 var mongopath = "mongodb://localhost:27017/notifications";
+var authenticationKeys = {};
 
 // Enable special things with express
 app.use(bodyParser.json());
@@ -34,8 +35,8 @@ app.use(session({
   secret: "asdfasdf",
   resave: true,
   saveUninitialized: true,
-  store: new MongoStore({ url: mongopath }),
-  cookie: {maxAge: 600000}
+  store: new MongoStore({ url: mongopath })
+  //cookie: {maxAge: 600000}
 }));
 app.disable("x-powered-by");
 app.enable("trust proxy");
@@ -47,6 +48,11 @@ function grs(length) {
     s = s+casual.letter;
   }
   return s;
+}
+function addAuthKey(username) {
+  var authKey = {username: username, key: grs(100), time: 10};
+  authenticationKeys[username] = authKey;
+  return authKey;
 }
 function checkPassword(pass, dbpass) {
   if (pass == dbpass) {
@@ -64,6 +70,24 @@ function checkPassword(pass, dbpass) {
   res.sendFile("index.html", {root: __dirname + "/public/"});
 });*/
 
+app.get("/t", function(req,res){
+  addAuthKey("asdf");
+  res.send("asdf");
+});
+
+// Auth keys
+setInterval(function(){
+  //console.log("AuthKey ticking");
+  //console.log(authenticationKeys);
+  for (username in authenticationKeys) {
+    if (authenticationKeys[username].time == 0) {
+      delete authenticationKeys[username];
+    } else {
+      authenticationKeys[username].time -= 1;
+    }
+  }
+}, 999);
+
 // MongoDB
 var db = new Mongo("notifications", new MongoServer("localhost", 27017, {auto_reconnect: true}), {w: 1});
 db.open(function(e, d){
@@ -75,7 +99,8 @@ db.open(function(e, d){
 });
 
 app.get("/logout", function(req, res){
-
+  req.session.authenticated = false;
+  req.session.data = {};
   res.redirect("/");
 });
 
@@ -97,6 +122,7 @@ app.post("/login", function(req, res){
       if (checkPassword(req.body.password, o.password)) {
         req.session.authenticated = true;
         req.session.data = {username: o.username};
+        addAuthKey(o.username);
         res.send({success: true});
       } else {
         req.session.authenticated = false;
@@ -108,8 +134,8 @@ app.post("/login", function(req, res){
 });
 
 app.get("/", function(req, res){
-  if (req.session.loggedin !== undefined) {
-    if (req.session.loggedin) {
+  if (req.session.authenticated !== undefined) {
+    if (req.session.authenticated) {
       res.sendFile(path+"index_loggedin.html");
     } else {
       res.sendFile(path+"index_notloggedin.html");
@@ -120,7 +146,16 @@ app.get("/", function(req, res){
 });
 
 app.get("/data", function(req, res){
-
+  if (req.session.authenticated) {
+    if (authenticationKeys[req.session.data.username] == undefined) {
+      res.send({type:"error", msg:"no-key-found"});
+      return;
+    }
+    var authKey = authenticationKeys[req.session.data.username].key;
+    res.send({username:req.session.data.username, key:authKey});
+  } else {
+    res.send({type:"error", msg:"not-authenticated"});
+  }
 });
 
 app.use(function(req, res, next){
@@ -136,7 +171,15 @@ var server = ws.createServer(function(conn){
     str = JSON.parse(str);
     console.log(str);
     if (str.type == "authenticate") {
-
+      if (conn.authenticated == false) {
+        if (str.key == authenticationKeys[str.username].key) {
+          authenticationKeys[str.username].time = 0;
+        } else {
+          conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"Error: Invalid AuthKey"}}));
+        }
+      } else {
+        conn.send(JSON.stringify({type: "alert", alert: {type:"warning", msg:"Error: Already authenticated"}}));
+      }
     } else {
       if (conn.authenticated == true) {
         if (str.type == "debug_alert") {
