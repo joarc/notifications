@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Express HTML</title>
+    <title>N! - The simple notifications system</title>
     <script src="/static/js/jquery.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
     <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">-->
@@ -86,7 +86,7 @@
         //console.log("test");
         if (res.success) {
           window.location.reload(true);
-          document.cookie = "wskey="+res.key+"; max-age=3; expires="+new Date().toUTCString();
+          document.cookie = "wskey="+res.key+"; max-age=300*4; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes()+20, new Date().getSeconds(), new Date().getMilliseconds()).toUTCString();
         } else {
           $("#login-error").removeClass("hidden").hide();
           $("#login-error").text(res.msg);

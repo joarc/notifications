@@ -18,6 +18,11 @@ var fs = require("fs");
 // Start express
 var app = express();
 
+// replaceAll
+function replaceAll(target, search, replacement) {
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
+
 // var
 var path = pathlib.join(__dirname+"/public/");
 var mongopath = "mongodb://localhost:27017/notifications";
@@ -27,9 +32,11 @@ var authenticationKeys = {};
 app.engine("html", function(fp, o, callback){
   fs.readFile(fp, function(err, c){
     if (err) return callback(new Error(err));
-    var rendered = content.toString()
-    .replace("<?username?>", o.username)
-    .replace("<??>", );
+    var rendered = replaceAll(c.toString(), "%username%", o.username);
+    rendered = replaceAll(rendered, "%wsauthkey%", o.key);
+    /*var rows = c.toString().split("\n").forEach(function(v,i){
+      rendered = rendered+"\n"+v.replaceAll("<?username?>", o.username);
+    });*/
     return callback(null, rendered);
   });
 });
@@ -111,8 +118,8 @@ app.post("/login", function(req, res){
     } else {
       if (checkPassword(req.body.password, o.password)) {
         req.session.authenticated = true;
-        req.session.data = {username: o.username};
-        res.send({success: true, key: addAuthKey(o.username)});
+        req.session.data = {username: o.username, key: addAuthKey(o.username)};
+        res.send({success: true, key: req.session.data.key});
       } else {
         req.session.authenticated = false;
         req.session.data = {};
@@ -125,7 +132,7 @@ app.post("/login", function(req, res){
 app.get("/", function(req, res){
   if (req.session.authenticated !== undefined) {
     if (req.session.authenticated) {
-      res.render("index_loggedin", {username: req.session.data.username});
+      res.render("index_loggedin", {username: req.session.data.username, key: req.session.data.key});
     } else {
       res.render("index_notloggedin", {});
     }
