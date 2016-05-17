@@ -1,3 +1,23 @@
+/* General Classes */
 .alert-hidden {
   visibility: hidden;
+}
+.hidden {
+  display: none;
+}
+
+/* Special Ids */
+#refresh {
+  position:fixed;
+  top:0px;
+  bottom:0px;
+  right:0px;
+  left:0px;
+  padding:20%;
+  background-color:black;
+  opacity: 0.6;
+  z-index: 1000;
+  color:white;
+  font-size:600%;
+  text-align:center;
 }

@@ -50,6 +50,9 @@
         </div>
       </div>
     </div>
+    <div id="refresh" class="hidden">
+      <a href="/">Please refresh the page!</a>
+    </div>
     <script>
     // Websocket
     var ws;
@@ -61,10 +64,15 @@
       ws = new WebSocket(loc);
       ws.onopen = function(e){
         $.get("/data", function(res){
-          console.log(res);
+          //console.log(res);
           $("#username").text(res.username);
-          send("authenticate", {username: res.username, key: res.key});
-        })
+          if (document.cookie.replace(/(?:(?:^|.*;\s*)wskey\s*\=\s*([^;]*).*$)|^.*$/, "$1") != "") {
+            send("authenticate", {username: res.username, key: document.cookie.replace(/(?:(?:^|.*;\s*)wskey\s*\=\s*([^;]*).*$)|^.*$/, "$1")});
+          } else {
+            alert({type:"success", msg:"Service has been restored! Please refresh the page to login again!"});
+            $("#refresh").removeClass("hidden");
+          }
+        });
       }
       ws.onmessage = function(e){
         var data = JSON.parse(e.data);

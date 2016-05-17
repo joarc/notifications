@@ -13,6 +13,7 @@ var casual = require("casual");
 var MongoStore = require('connect-mongo')(session);
 var Mongo = require('mongodb').Db;
 var MongoServer = require('mongodb').Server;
+var fs = require("fs");
 
 // Start express
 var app = express();
@@ -22,15 +23,22 @@ var path = pathlib.join(__dirname+"/public/");
 var mongopath = "mongodb://localhost:27017/notifications";
 var authenticationKeys = {};
 
+// Template engine
+app.engine("html", function(fp, o, callback){
+  fs.readFile(fp, function(err, c){
+    if (err) return callback(new Error(err));
+    var rendered = content.toString()
+    .replace("<?username?>", o.username)
+    .replace("<??>", );
+    return callback(null, rendered);
+  });
+});
+
 // Enable special things with express
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
-
-// Static cache
-app.use("/static", express.static("static"));
-
-// Settings
-//app.use(express.json());
+app.set('views', './views');
+app.set('view engine', "html");
 app.use(session({
   secret: "asdfasdf",
   resave: true,
@@ -41,6 +49,9 @@ app.use(session({
 app.disable("x-powered-by");
 app.enable("trust proxy");
 
+// Static cache
+app.use("/static", express.static("static"));
+
 // Generic Functions
 function grs(length) {
   var s = "";
@@ -50,7 +61,7 @@ function grs(length) {
   return s;
 }
 function addAuthKey(username) {
-  var authKey = {username: username, key: grs(100), time: 10};
+  var authKey = grs(100);
   authenticationKeys[username] = authKey;
   return authKey;
 }
@@ -61,32 +72,16 @@ function checkPassword(pass, dbpass) {
     return false;
   }
 }
-/*function addAlert(type, msg, to){
-  loggedInUsers[to][notifications][loggedInUsers[to][notifications].length+1] = {type: type, msg: msg};
-}*/
 
-// Router
-/*app.get('/', function (req, res) {
-  res.sendFile("index.html", {root: __dirname + "/public/"});
-});*/
-
+// TODO: Remove Debug stuff
 app.get("/t", function(req,res){
   addAuthKey("asdf");
   res.send("asdf");
 });
-
-// Auth keys
-setInterval(function(){
-  //console.log("AuthKey ticking");
-  //console.log(authenticationKeys);
-  for (username in authenticationKeys) {
-    if (authenticationKeys[username].time == 0) {
-      delete authenticationKeys[username];
-    } else {
-      authenticationKeys[username].time -= 1;
-    }
-  }
-}, 999);
+app.get("/reg", function(req, res){
+  db.collection('users').insertOne({username: "joarc", password: "asdfasdf"});
+  res.send("adding joarc:asdfasdf");
+});
 
 // MongoDB
 var db = new Mongo("notifications", new MongoServer("localhost", 27017, {auto_reconnect: true}), {w: 1});
@@ -104,13 +99,8 @@ app.get("/logout", function(req, res){
   res.redirect("/");
 });
 
-app.get("/reg", function(req, res){
-  db.collection('users').insertOne({username: "joarc", password: "asdfasdf"});
-  res.send("adding joarc:asdfasdf");
-});
-
 app.get("/login", function(req, res){
-  res.sendFile(path+"login.html");
+  res.render("login", {});
 });
 app.post("/login", function(req, res){
   if (db.collection('users').findOne({username:req.body.username}, {}, function(e,o){
@@ -122,8 +112,7 @@ app.post("/login", function(req, res){
       if (checkPassword(req.body.password, o.password)) {
         req.session.authenticated = true;
         req.session.data = {username: o.username};
-        addAuthKey(o.username);
-        res.send({success: true});
+        res.send({success: true, key: addAuthKey(o.username)});
       } else {
         req.session.authenticated = false;
         req.session.data = {};
@@ -136,44 +125,40 @@ app.post("/login", function(req, res){
 app.get("/", function(req, res){
   if (req.session.authenticated !== undefined) {
     if (req.session.authenticated) {
-      res.sendFile(path+"index_loggedin.html");
+      res.render("index_loggedin", {username: req.session.data.username});
     } else {
-      res.sendFile(path+"index_notloggedin.html");
+      res.render("index_notloggedin", {});
     }
   } else {
-    res.sendFile(path+"index_notloggedin.html");
+    res.render("index_notloggedin", {});
   }
 });
 
 app.get("/data", function(req, res){
   if (req.session.authenticated) {
-    if (authenticationKeys[req.session.data.username] == undefined) {
-      res.send({type:"error", msg:"no-key-found"});
-      return;
-    }
-    var authKey = authenticationKeys[req.session.data.username].key;
-    res.send({username:req.session.data.username, key:authKey});
+    res.send({username:req.session.data.username});
   } else {
     res.send({type:"error", msg:"not-authenticated"});
   }
 });
 
 app.use(function(req, res, next){
-  res.status(404).sendFile(path+"404.html");
+  res.status(404).render("404");
 });
 
 // Websocket Server
 var server = ws.createServer(function(conn){
   //console.log(conn);
   conn.authenticated = false;
-  conn.userdata = null;
+  conn.username = null;
   conn.on("text", function(str){
     str = JSON.parse(str);
     console.log(str);
     if (str.type == "authenticate") {
       if (conn.authenticated == false) {
-        if (str.key == authenticationKeys[str.username].key) {
-          authenticationKeys[str.username].time = 0;
+        if (authenticationKeys[str.msg.username] == str.msg.key) {
+          conn.authenticated = true;
+          conn.username = str.msg.username;
         } else {
           conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"Error: Invalid AuthKey"}}));
         }

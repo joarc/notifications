@@ -86,6 +86,7 @@
         //console.log("test");
         if (res.success) {
           window.location.reload(true);
+          document.cookie = "wskey="+res.key+"; max-age=3; expires="+new Date().toUTCString();
         } else {
           $("#login-error").removeClass("hidden").hide();
           $("#login-error").text(res.msg);
