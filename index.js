@@ -10,11 +10,12 @@ var bodyParser = require('body-parser');
 var pathlib = require("path");
 var ws = require("nodejs-websocket");
 var casual = require("casual");
+var MongoStore = require('connect-mongo')(session);
 
 // Start express
 var app = express();
 
-// Enable body-parser
+// Enable special things with express
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -23,15 +24,18 @@ app.use("/static", express.static("static"));
 
 // Settings
 //app.use(express.json());
-app.use(session({secret: "asdfasdf", resave: true, saveUninitialized: false, cookie: {maxAge: 600000}}));
+app.use(session({
+  secret: "asdfasdf",
+  resave: true,
+  saveUninitialized: true,
+  store: new MongoStore({ url: "mongodb://localhost:27017/notifications" }),
+  cookie: {maxAge: 600000}
+}));
 app.disable("x-powered-by");
 app.enable("trust proxy");
-app.locals.title = "notfications";
-app.locals.email = "joarc@joarc.se";
 
 // var
 var path = pathlib.join(__dirname+"/public/");
-var loggedInUsers = [];
 
 // Generic Functions
 function grs(length) {
@@ -51,28 +55,15 @@ function grs(length) {
 });*/
 
 app.get("/logout", function(req, res){
-  req.session.loggedin = false;
-  req.session.logindata = {};
-  req.session.wskey = "";
+
   res.redirect("/");
-})
+});
 
 app.get("/login", function(req, res){
   res.sendFile(path+"login.html");
 });
 app.post("/login", function(req, res){
-  var login = {username: req.body.username, password: req.body.password, key: grs(100)};
-  console.log(login);
-  if (login.username == "joarc" && login.password == "asdfasdf") {
-    req.session.logindata = login;
-    loggedInUsers[login.username] = login;
-    req.session.loggedin = true;
-    //notificationsToUsers[req.body.username] = {type: "success", msg: "Login Successfull"};
-    res.send({success: true});
-  } else {
-    res.send({success: false});
-  }
-  //res.redirect("/");
+
 });
 
 app.get("/", function(req, res){
@@ -88,13 +79,7 @@ app.get("/", function(req, res){
 });
 
 app.get("/data", function(req, res){
-  if (req.session.loggedin) {
-    var data = {username: req.session.logindata.username, key: req.session.logindata.key};
-    res.send(data);
-  } else {
-    var error = {type: "error", msg: "you are not logged in!"};
-    res.send(error);
-  }
+  // TODO: Setup WebSocket Login system
 });
 
 app.use(function(req, res, next){
@@ -110,23 +95,21 @@ var server = ws.createServer(function(conn){
     str = JSON.parse(str);
     console.log(str);
     if (str.type == "authenticate") {
-      if (loggedInUsers[str.msg.username] != null) {
-        if (loggedInUsers[str.msg.username].key == str.msg.key) {
-          conn.authenticated = true;
-          conn.userdata = loggedInUsers[str.msg.username];
-        }
-      }
+
     } else {
       if (conn.authenticated == true) {
         if (str.type == "debug_alert") {
-          conn.send({type: "alert", alert: {type:"info",msg:"Debug Alert"}});
+          if (str.msg != "") {
+            conn.send(JSON.stringify({type: "alert", alert: {type:str.msg,msg:"Debug Alert"}}));
+          } else {
+            conn.send(JSON.stringify({type: "alert", alert: {type:"info",msg:"Debug Alert"}}));
+          }
         }
       }
     }
   });
   conn.on("close", function(code, reason){
     console.log("Connection closed");
-    conn.username = null;
     conn.userdata = null;
   });
 });
