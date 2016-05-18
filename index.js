@@ -27,6 +27,7 @@ function replaceAll(target, search, replacement) {
 var path = pathlib.join(__dirname+"/public/");
 var mongopath = "mongodb://localhost:27017/notifications";
 var authenticationKeys = {};
+var wsusername = [];
 
 // Template engine
 app.engine("html", function(fp, o, callback){
@@ -103,7 +104,7 @@ db.open(function(e, d){
 app.get("/logout", function(req, res){
   req.session.authenticated = false;
   req.session.data = {};
-  res.redirect("/");
+  res.redirect("/login");
 });
 
 app.get("/login", function(req, res){
@@ -156,18 +157,32 @@ app.use(function(req, res, next){
 // Websocket Server
 var server = ws.createServer(function(conn){
   //console.log(conn);
-  conn.authenticated = false;
-  conn.username = null;
+  /*var util = require("util");
+  fs.writeFileSync('./data2', util.inspect(conn), "utf-8");*/
+  console.log("---");
+  console.log(conn.key);
+  console.log(conn.authenticated);
+  /*conn.authenticated = false;
+  conn.username = null;*/
   conn.on("text", function(str){
     str = JSON.parse(str);
     console.log(str);
     if (str.type == "authenticate") {
-      if (conn.authenticated == false) {
-        if (authenticationKeys[str.msg.username] == str.msg.key) {
-          conn.authenticated = true;
-          conn.username = str.msg.username;
+      if (conn.authenticated == false || conn.authenticated == undefined) {
+        if ((wsusername[str.msg.username] != "" || wsusername[str.msg.username] != null || wsusername[str.msg.username] != undefined) && (str.msg.key == "" || str.msg.key == null || str.msg.key == undefined)) {
+          console.log("conn set test");
+          conn.key = wsusername[str.msg.username];
+          console.log(conn.authenticated);
         } else {
-          conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"Error: Invalid AuthKey"}}));
+          if (authenticationKeys[str.msg.username] == str.msg.key) {
+            conn.authenticated = true;
+            conn.username = str.msg.username;
+            conn.send(JSON.stringify({type: "alert", alert: {type:"info", msg:"Successful login"}}));
+            wsusername[str.msg.username] = conn.key;
+          } else {
+            conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"Error: Invalid AuthKey"}}));
+            conn.send(JSON.stringify({type: "refresh", refresh:true}));
+          }
         }
       } else {
         conn.send(JSON.stringify({type: "alert", alert: {type:"warning", msg:"Error: Already authenticated"}}));
@@ -185,8 +200,7 @@ var server = ws.createServer(function(conn){
     }
   });
   conn.on("close", function(code, reason){
-    console.log("Connection closed");
-    conn.userdata = null;
+    console.log("Connection closed: "+conn.key);
   });
 });
 

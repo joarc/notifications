@@ -50,9 +50,7 @@
         </div>
       </div>
     </div>
-    <div id="refresh" class="hidden">
-      <a href="/">Please refresh the page!</a>
-    </div>
+    <div id="refresh" class="hidden"><a href="/logout">Please login again!</a></div>
     <script>
     // Websocket
     var ws;
@@ -73,6 +71,13 @@
           if (alert.type != "none") {
             alert(data.alert);
           }
+        } else if (data.type == "refresh") {
+          if (data.refresh) {
+            $("#refresh").removeClass("hidden");
+            $.get("/logout", function(res){});
+          } else {
+            $("#refresh").addClass("hidden");
+          }
         } else if (data.type == "error") {
           alert({type:"danger", msg:data.msg, id:Math.random()*10+1});
         }
@@ -89,8 +94,8 @@
     }
     start(loc);
     function send(type, msg) {
-      var wskey = document.cookie.replace(/(?:(?:^|.*;\s*)wskey\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-      document.cookie = "wskey="+wskey+"; max-age=1200; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes()+20, new Date().getSeconds(), new Date().getMilliseconds()).toUTCString();
+      /*var wskey = document.cookie.replace(/(?:(?:^|.*;\s*)wskey\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+      document.cookie = "wskey="+wskey+"; max-age=1200; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes()+20, new Date().getSeconds(), new Date().getMilliseconds()).toUTCString();*/
       ws.send(JSON.stringify({type: type, msg: msg}));
     }
     function alert(alert) {

@@ -63,6 +63,10 @@
       </div>
     </div>
     <script>
+    var type = window.location.hash.substr(1);
+    if (type == "login") {
+      $("#login").modal("show");
+    }
     $('#login').on('shown.bs.modal', function(){
       $('#login-username').focus();
       $("#login input").keypress(function(e){
@@ -78,15 +82,12 @@
       var logindata = {username: loginusername, password: loginpassword};
       $("#login").modal("hide");
       $("#login-password").val(null);
-      console.log("before ajax");
       var ajax = $.ajax({url: "/login", method: "POST", dataType: "json", data: logindata});
 
       ajax.always(function(res){
-        console.log(res);
-        //console.log("test");
         if (res.success) {
           window.location.reload(true);
-          document.cookie = "wskey="+res.key+"; max-age=300*4; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes()+20, new Date().getSeconds(), new Date().getMilliseconds()).toUTCString();
+          document.cookie = "wskey="+res.key+"; max-age=3; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes(), new Date().getSeconds()+3, new Date().getMilliseconds()).toUTCString();
         } else {
           $("#login-error").removeClass("hidden").hide();
           $("#login-error").text(res.msg);

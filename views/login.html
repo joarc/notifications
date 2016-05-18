@@ -13,14 +13,44 @@
   </head>
   <body>
     <div class="container">
-      <form class="form-signin" method="post" action="/login">
+      <div class="alert alert-danger alert-dismissible hidden" id="login-error"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="glyphicon glyphicon-minus-sign"></span> Login Failed: Incorrect username or password!</div>
+      <form class="form-signin" id="login" method="post" action="/login">
         <h2 class="form-signin-heading">Please sign in</h2>
-        <label for="inputUsername" class="sr-only">Username: </label>
-        <input type="text" id="inputUsername" class="form-control" placeholder="Username" name="username" required autofocus>
-        <label for="inputPassword" class="sr-only">Password</label>
-        <input type="password" id="inputPassword" class="form-control" placeholder="Password" name="password" required>
-        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+        <input type="text" id="username" class="form-control" placeholder="Username" name="username" required autofocus>
+        <input type="password" id="password" class="form-control" placeholder="Password" name="password" required>
+        <button class="btn btn-lg btn-primary btn-block" type="button" onclick="login();">Sign in</button>
       </form>
     </div>
+    <script>
+      $("#login input").keypress(function(e){
+        if (e.which == 13){
+          login();
+        }
+      })
+    function login(){
+      var loginusername = $("#username").val();
+      var loginpassword = $("#password").val();
+      //var logindata = JSON.stringify({username: loginusername, password: loginpassword});
+      var logindata = {username: loginusername, password: loginpassword};
+      $("#login-password").val(null);
+      var ajax = $.ajax({url: "/login", method: "POST", dataType: "json", data: logindata});
+
+      ajax.always(function(res){
+        console.log(res);
+        if (res.success) {
+          window.location.href = "/";
+          document.cookie = "wskey="+res.key+"; max-age=3; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes(), new Date().getSeconds()+3, new Date().getMilliseconds()).toUTCString();
+        } else {
+          $("#login-error").removeClass("hidden").hide();
+          $("#login-error").text(res.msg);
+          $("#login-error").fadeIn(1000, function(){
+            setTimeout(function(){
+              $("#login-error").fadeOut(2000);
+            }, 4000);
+          });
+        }
+      });
+    }
+    </script>
   </body>
 </html>
