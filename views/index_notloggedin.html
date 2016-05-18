@@ -87,7 +87,7 @@
       ajax.always(function(res){
         if (res.success) {
           window.location.reload(true);
-          document.cookie = "wskey="+res.key+"; max-age=3; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes(), new Date().getSeconds()+3, new Date().getMilliseconds()).toUTCString();
+          document.cookie = "wskey="+res.key+"; max-age=5";
         } else {
           $("#login-error").removeClass("hidden").hide();
           $("#login-error").text(res.msg);

@@ -62,7 +62,11 @@
     function start(loc) {
       ws = new WebSocket(loc);
       ws.onopen = function(e){
-        send("authenticate", {username: username, key: document.cookie.replace(/(?:(?:^|.*;\s*)wskey\s*\=\s*([^;]*).*$)|^.*$/, "$1")});
+        if (document.cookie != "") {
+          send("authenticate", {username: username, key: document.cookie.replace(/(?:(?:^|.*;\s*)connect\.sid\s*\=\s*([^;]*).*$)|^.*$/, "$1")});
+        } //else {
+          //send("authenticate", {username: username, key: document.cookie.replace(/(?:(?:^|.*;\s*)connect.sid\s*\=\s*([^;]*).*$)|^.*$/, "$1")});
+        //}
       }
       ws.onmessage = function(e){
         var data = JSON.parse(e.data);
@@ -72,12 +76,12 @@
             alert(data.alert);
           }
         } else if (data.type == "refresh") {
-          if (data.refresh) {
+          /*if (data.refresh) {
             $("#refresh").removeClass("hidden");
             $.get("/logout", function(res){});
           } else {
             $("#refresh").addClass("hidden");
-          }
+          }*/
         } else if (data.type == "error") {
           alert({type:"danger", msg:data.msg, id:Math.random()*10+1});
         }
