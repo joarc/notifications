@@ -19,7 +19,6 @@ var MongoServer = require('mongodb').Server;
 // Misc libs
 var ws = require("nodejs-websocket");
 var casual = require("casual");
-var pathlib = require("path");
 var fs = require("fs");
 var cookie = require("cookie");
 
@@ -27,17 +26,24 @@ var cookie = require("cookie");
 var app = express();
 
 // var
-var path = pathlib.join(__dirname+"/public/");
 var mongopath = "mongodb://localhost:27017/notifications";
-var authenticationKeys = {};
 var wsusername = [];
 var secret = "asdfasdf";
+
+// Template engine content
+var enginedata = {
+  navbar_notloggedin: fs.readFileSync("./blocks/navbar_notloggedin.html"),
+  navbar_loggedin:    fs.readFileSync("./blocks/navbar_loggedin.html"),
+  footer:             fs.readFileSync("./blocks/footer.html")
+};
 
 // Template engine
 app.engine("html", function(fp, o, callback){
   fs.readFile(fp, function(err, c){
     if (err) return callback(new Error(err));
     var rendered = c.toString();
+        rendered = replaceAll(rendered, "%#navbar_loggedin#%", enginedata.navbar_loggedin);
+        rendered = replaceAll(rendered, "%#navbar_notloggedin#%", enginedata.navbar_notloggedin);
         rendered = replaceAll(rendered, "%username%", o.username);
       //rendered = replaceAll(rendered, "%wsauthkey%", o.key);
     return callback(null, rendered);
@@ -68,11 +74,6 @@ function grs(length) {
     s = s+casual.letter;
   }
   return s;
-}
-function addAuthKey(username) {
-  var authKey = grs(100);
-  authenticationKeys[username] = authKey;
-  return authKey;
 }
 function checkPassword(pass, dbpass) {
   if (pass == dbpass) {
@@ -157,14 +158,6 @@ app.get("/", function(req, res){
     }
   } else {
     res.render("index_notloggedin", {});
-  }
-});
-
-app.get("/data", function(req, res){
-  if (req.session.authenticated) {
-    res.send({username:req.session.data.username});
-  } else {
-    res.send({type:"error", msg:"not-authenticated"});
   }
 });
 
