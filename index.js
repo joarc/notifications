@@ -3,41 +3,43 @@
  * Creator: Joarc (Joar Classon)
  * Copyright Joar Classon
  */
-// Load required libraries
+// Express libs
 var express = require("express");
 var session = require("express-session");
-var bodyParser = require('body-parser');
-var pathlib = require("path");
-var ws = require("nodejs-websocket");
-var casual = require("casual");
+
+// Parser libs
+var bodyParser   = require('body-parser');
+var cookieParser = require('cookie-parser');
+
+// MongoDB libs
 var MongoStore = require('connect-mongo')(session);
 var Mongo = require('mongodb').Db;
 var MongoServer = require('mongodb').Server;
+
+// Misc libs
+var ws = require("nodejs-websocket");
+var casual = require("casual");
+var pathlib = require("path");
 var fs = require("fs");
+var cookie = require("cookie");
 
 // Start express
 var app = express();
-
-// replaceAll
-function replaceAll(target, search, replacement) {
-    return target.replace(new RegExp(search, 'g'), replacement);
-};
 
 // var
 var path = pathlib.join(__dirname+"/public/");
 var mongopath = "mongodb://localhost:27017/notifications";
 var authenticationKeys = {};
 var wsusername = [];
+var secret = "asdfasdf";
 
 // Template engine
 app.engine("html", function(fp, o, callback){
   fs.readFile(fp, function(err, c){
     if (err) return callback(new Error(err));
-    var rendered = replaceAll(c.toString(), "%username%", o.username);
-    rendered = replaceAll(rendered, "%wsauthkey%", o.key);
-    /*var rows = c.toString().split("\n").forEach(function(v,i){
-      rendered = rendered+"\n"+v.replaceAll("<?username?>", o.username);
-    });*/
+    var rendered = c.toString();
+        rendered = replaceAll(rendered, "%username%", o.username);
+      //rendered = replaceAll(rendered, "%wsauthkey%", o.key);
     return callback(null, rendered);
   });
 });
@@ -48,17 +50,15 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set('views', './views');
 app.set('view engine', "html");
 app.use(session({
-  secret: "asdfasdf",
+  secret: secret,
   resave: true,
   saveUninitialized: true,
   unset: "destroy",
   store: new MongoStore({ url: mongopath }),
-  cookie: {maxAge: 600000, httpOnly: false}
+  cookie: {maxAge: 600000, httpOnly: true}
 }));
 app.disable("x-powered-by");
 app.enable("trust proxy");
-
-// Static cache
 app.use("/static", express.static("static"));
 
 // Generic Functions
@@ -81,6 +81,9 @@ function checkPassword(pass, dbpass) {
     return false;
   }
 }
+function replaceAll(target, search, replacement) {
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
 
 // TODO: Remove Debug stuff
 app.get("/t", function(req,res){
@@ -102,6 +105,7 @@ db.open(function(e, d){
   }
 });
 
+// Pages
 app.get("/logout", function(req, res){
   req.session.destroy();
   res.redirect("/login");
@@ -119,7 +123,7 @@ app.post("/login", function(req, res){
     } else {
       if (checkPassword(req.body.password, o.password)) {
         req.session.authenticated = true;
-        req.session.data = {username: o.username, key: req.session.id};
+        req.session.data = {username: o.username};
         wsusername[o.username] = req.session.id;
         res.send({success: true, key: req.session.id});
       } else {
@@ -135,7 +139,7 @@ app.get("/", function(req, res){
   console.log(req.session.id);
   if (req.session.authenticated !== undefined) {
     if (req.session.authenticated) {
-      res.render("index_loggedin", {username: req.session.data.username, key: req.session.data.key});
+      res.render("index_loggedin", {username: req.session.data.username});
     } else {
       res.render("index_notloggedin", {});
     }
@@ -167,14 +171,21 @@ var server = ws.createServer(function(conn){
     console.log(str);
     if (str.type == "authenticate") {
       if (conn.authenticated == false) {
-        if (wsusername[str.msg.username] == str.msg.key) {
-          conn.authenticated = true;
-          conn.username = str.msg.username;
-          conn.send(JSON.stringify({type: "alert", alert: {type:"info", msg:"Successful login"}}));
-          //wsusername[str.msg.username] = conn.key;
+        if (conn.headers.cookie) {
+          var sessionCookie = cookie.parse(conn.headers.cookie);
+          var sid = cookieParser.signedCookie(sessionCookie['connect.sid'], secret);
+          //console.log(sid);
+          if (wsusername[str.msg.username] == sid) {
+            conn.authenticated = true;
+            conn.username = str.msg.username;
+            conn.send(JSON.stringify({type: "alert", alert: {type:"info", msg:"Successful login"}}));
+            //wsusername[str.msg.username] = conn.key;
+          } else {
+            conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"Error: Invalid AuthKey"}}));
+            //conn.send(JSON.stringify({type: "refresh", refresh:true}));
+          }
         } else {
-          conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"Error: Invalid AuthKey"}}));
-          //conn.send(JSON.stringify({type: "refresh", refresh:true}));
+          conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"No cookies recceived! Please contact Site Admins!"}}));
         }
       } else {
         conn.send(JSON.stringify({type: "alert", alert: {type:"warning", msg:"Error: Already authenticated"}}));
