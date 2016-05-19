@@ -63,7 +63,7 @@
       ws = new WebSocket(loc);
       ws.onopen = function(e){
         if (document.cookie != "") {
-          send("authenticate", {username: username, key: document.cookie.replace(/(?:(?:^|.*;\s*)connect\.sid\s*\=\s*([^;]*).*$)|^.*$/, "$1")});
+          send("authenticate", {username: username});
         } //else {
           //send("authenticate", {username: username, key: document.cookie.replace(/(?:(?:^|.*;\s*)connect.sid\s*\=\s*([^;]*).*$)|^.*$/, "$1")});
         //}
