@@ -13,20 +13,39 @@
   </head>
   <body>
     <div class="container">
-      <div class="alert alert-danger alert-dismissible hidden" id="login-error"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="glyphicon glyphicon-minus-sign"></span> Login Failed: Incorrect username or password!</div>
+      <div class="alert alert-danger alert-dismissible hidden" id="login-error">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <span class="glyphicon glyphicon-minus-sign"></span>
+         Login Failed: Incorrect username or password!
+      </div>
+      <div class="alert alert-success alert-dismissible hidden" id="logged-out">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <span class="glyphicon glyphicon-log-out"></span>
+         You successfully logged out.
+      </div>
       <form class="form-signin" id="login" method="post" action="/login">
-        <h2 class="form-signin-heading">Please sign in</h2>
+        <h2 class="form-signin-heading"><span class="glyphicon glyphicon-log-in"></span> Please sign in</h2>
         <input type="text" id="username" class="form-control" placeholder="Username" name="username" required autofocus>
         <input type="password" id="password" class="form-control" placeholder="Password" name="password" required>
         <button class="btn btn-lg btn-primary btn-block" type="button" onclick="login();">Sign in</button>
+        <br><br><br>
+        <h4 class="text-center"><a href="/">Back to Home <span class="glyphicon glyphicon-home"></span></a></h4>
       </form>
     </div>
     <script>
-      $("#login input").keypress(function(e){
-        if (e.which == 13){
-          login();
-        }
-      })
+    var type = window.location.hash.substr(1);
+    if (type == "loggedout") {
+      $("#logged-out").removeClass("hidden");
+    }
+    $("#login input").keypress(function(e){
+      if (e.which == 13){
+        login();
+      }
+    })
     function login(){
       var loginusername = $("#username").val();
       var loginpassword = $("#password").val();
@@ -39,7 +58,6 @@
         console.log(res);
         if (res.success) {
           window.location.href = "/";
-          document.cookie = "wskey="+res.key+"; max-age=3; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes(), new Date().getSeconds()+3, new Date().getMilliseconds()).toUTCString();
         } else {
           $("#login-error").removeClass("hidden").hide();
           $("#login-error").text(res.msg);

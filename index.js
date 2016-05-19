@@ -85,16 +85,6 @@ function replaceAll(target, search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
 };
 
-// TODO: Remove Debug stuff
-app.get("/t", function(req,res){
-  addAuthKey("asdf");
-  res.send("asdf");
-});
-app.get("/reg", function(req, res){
-  db.collection('users').insertOne({username: "joarc", password: "asdfasdf"});
-  res.send("adding joarc:asdfasdf");
-});
-
 // MongoDB
 var db = new Mongo("notifications", new MongoServer("localhost", 27017, {auto_reconnect: true}), {w: 1});
 db.open(function(e, d){
@@ -102,7 +92,29 @@ db.open(function(e, d){
     console.log(e);
   } else {
     console.log("MongoDB: Connected to database notifications");
+    // Load mongo user->key
+    db.collection("keys").find({}).toArray().then(function(data){
+      data.forEach(function(v,i){
+        console.log(i, v);
+        wsusername[v.username] = v.key;
+      });
+      /*setInterval(function(){
+        db.collection("keys").find({}).toArray().then(function(udata){
+          //console.log(udata);
+        });
+      }, 5*1000);*/
+    });
   }
+});
+
+// TODO: Remove Debug stuff
+app.get("/t", function(req,res){
+  db.collection("keys").remove({});
+  res.send("asdf");
+});
+app.get("/reg", function(req, res){
+  db.collection('users').insertOne({username: "joarc", password: "asdfasdf"});
+  res.send("adding joarc:asdfasdf");
 });
 
 // Pages
@@ -125,6 +137,7 @@ app.post("/login", function(req, res){
         req.session.authenticated = true;
         req.session.data = {username: o.username};
         wsusername[o.username] = req.session.id;
+        db.collection("keys").update({username: o.username}, {username: o.username, key: req.session.id}, {upsert: true});
         res.send({success: true, key: req.session.id});
       } else {
         req.session.authenticated = false;
@@ -136,7 +149,6 @@ app.post("/login", function(req, res){
 });
 
 app.get("/", function(req, res){
-  console.log(req.session.id);
   if (req.session.authenticated !== undefined) {
     if (req.session.authenticated) {
       res.render("index_loggedin", {username: req.session.data.username});
@@ -172,17 +184,13 @@ var server = ws.createServer(function(conn){
     if (str.type == "authenticate") {
       if (conn.authenticated == false) {
         if (conn.headers.cookie) {
-          var sessionCookie = cookie.parse(conn.headers.cookie);
-          var sid = cookieParser.signedCookie(sessionCookie['connect.sid'], secret);
-          //console.log(sid);
+          var sid = cookieParser.signedCookie(cookie.parse(conn.headers.cookie)['connect.sid'], secret);
           if (wsusername[str.msg.username] == sid) {
             conn.authenticated = true;
             conn.username = str.msg.username;
-            conn.send(JSON.stringify({type: "alert", alert: {type:"info", msg:"Successful login"}}));
-            //wsusername[str.msg.username] = conn.key;
+            conn.send(JSON.stringify({type: "alert", alert: {type:"info", msg:"Successful Login!"}}));
           } else {
             conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"Error: Invalid AuthKey"}}));
-            //conn.send(JSON.stringify({type: "refresh", refresh:true}));
           }
         } else {
           conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"No cookies recceived! Please contact Site Admins!"}}));
@@ -198,7 +206,11 @@ var server = ws.createServer(function(conn){
           } else {
             conn.send(JSON.stringify({type: "alert", alert: {type:"info",msg:"Debug Alert"}}));
           }
+        } else {
+          conn.send(JSON.stringify({type: "alert", alert: {type:"warning",msg:"Invalid type!"}}));
         }
+      } else {
+        conn.send(JSON.stringify({type: "alert", alert: {type:"danger", msg:"Not Authenticated!"}}));
       }
     }
   });

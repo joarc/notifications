@@ -22,8 +22,8 @@
         </div>
         <div class="collapse navbar-collapse" id="navbar-collapse-1">
           <ul class="nav navbar-nav">
-            <li><a href="#about">About</a></li>
-            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/pricing">Pricing</a></li>
             <li><button type="button" onclick="send('debug_alert', 'info');">Debug</button></li>
             <li><button type="button" onclick="send('debug_alert', 'danger');">Debug</button></li>
             <li><button type="button" onclick="send('debug_alert', 'success');">Debug</button></li>
@@ -33,7 +33,7 @@
             <li><a href="/apidocs">API Documentation</a></li>
             <li><a href="/dashboard">Dashboard</a></li>
             <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Logged in as %username%<span class="caret"></span></a>
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Logged in as %username% <span class="caret"></span></a>
               <ul class="dropdown-menu">
                 <li><a href="/profile" class="text-center">Profile <span class="glyphicon glyphicon-user"></span></a></li>
                 <li class="divider"></li>
@@ -55,18 +55,14 @@
     // Websocket
     var ws;
     var loc = "ws://localhost:8081";
-    var username = "%username%";
     function reload(){
       document.location.reload(true);
     }
     function start(loc) {
       ws = new WebSocket(loc);
       ws.onopen = function(e){
-        if (document.cookie != "") {
-          send("authenticate", {username: username});
-        } //else {
-          //send("authenticate", {username: username, key: document.cookie.replace(/(?:(?:^|.*;\s*)connect.sid\s*\=\s*([^;]*).*$)|^.*$/, "$1")});
-        //}
+        console.log("Websocket open");
+        send("authenticate", {username: "%username%"});
       }
       ws.onmessage = function(e){
         var data = JSON.parse(e.data);
@@ -76,18 +72,18 @@
             alert(data.alert);
           }
         } else if (data.type == "refresh") {
-          /*if (data.refresh) {
+          if (data.refresh) {
             $("#refresh").removeClass("hidden");
             $.get("/logout", function(res){});
           } else {
             $("#refresh").addClass("hidden");
-          }*/
+          }
         } else if (data.type == "error") {
           alert({type:"danger", msg:data.msg, id:Math.random()*10+1});
         }
       }
       ws.onerror = function(e){
-        alert({type:"warning", msg:"Connection Error: WebSocket encountered an error!"});
+        alert({type:"warning", msg:"Connection Error: WebSocket encountered an error! <br>"+e});
       }
       ws.onclose = function(e){
         alert({type:"warning", msg:"Lost connection to server. Reconnecting..."});
@@ -98,12 +94,9 @@
     }
     start(loc);
     function send(type, msg) {
-      /*var wskey = document.cookie.replace(/(?:(?:^|.*;\s*)wskey\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-      document.cookie = "wskey="+wskey+"; max-age=1200; expires="+new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes()+20, new Date().getSeconds(), new Date().getMilliseconds()).toUTCString();*/
       ws.send(JSON.stringify({type: type, msg: msg}));
     }
     function alert(alert) {
-      //console.log(alert);
       var icon = "";
       if (alert.id == undefined || alert.id == null) alert.id = Math.floor(Math.random()*1000+1);
       switch (alert.type) {

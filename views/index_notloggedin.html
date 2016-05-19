@@ -22,11 +22,11 @@
         </div>
         <div class="collapse navbar-collapse" id="navbar-collapse-1">
           <ul class="nav navbar-nav">
-            <li><a href="#about">About</a></li>
-            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/pricing">Pricing</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="#login" data-toggle="modal" data-target="#login">Login</a></li>
+            <li><a href="#login" data-toggle="modal" data-target="#login"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
           </ul>
         </div>
       </div>
@@ -48,7 +48,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="Login">Login</h4>
+            <h4 class="modal-title" id="Login"><span class="glyphicon glyphicon-log-in"></span> Login</h4>
           </div>
           <div class="modal-body">
             <form method="post" action="/login">
@@ -87,7 +87,6 @@
       ajax.always(function(res){
         if (res.success) {
           window.location.reload(true);
-          //document.cookie = "wskey="+res.key+"; max-age=5";
         } else {
           $("#login-error").removeClass("hidden").hide();
           $("#login-error").text(res.msg);
