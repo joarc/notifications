@@ -1,3 +1,10 @@
 language: node_js
+branches:
+  only: 
+    - master
+    - beta
+    - alpha
+    - experimental
 node_js:
   - "6"
+  - "0.12"
