@@ -1,36 +1,13 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
+%#meta#%
     <title>N! - The simple notifications system</title>
-    <script src="/static/js/jquery.js"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
-    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">-->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="/static/css/index_notloggedin.css">
-    <link rel="stylesheet" href="/static/css/global.css">
+%#css#%
+    <link rel="stylesheet" href="/css/index_notloggedin.css">
   </head>
   <body>
-    <nav class="navbar navbar-default navbar-static-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1" aria-expanded="false">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">N!</a>
-        </div>
-        <div class="collapse navbar-collapse" id="navbar-collapse-1">
-          <ul class="nav navbar-nav">
-            <li><a href="/about">About</a></li>
-            <li><a href="/pricing">Pricing</a></li>
-          </ul>
-          <ul class="nav navbar-nav navbar-right">
-            <li><a href="#login" data-toggle="modal" data-target="#login"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
-          </ul>
-        </div>
-      </div>
-    </nav>
+%#navbar_notloggedin#%
     <div class="container">
       <div class="alert alert-danger alert-dismissible hidden" id="login-error"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="glyphicon glyphicon-minus-sign"></span> Login Failed: Incorrect username or password!</div>
       <div class="row">
@@ -43,6 +20,7 @@
         </div>
       </div>
     </div>
+%#footer#%
     <div class="modal fade" id="login" tabindex="-1" role="dialog" aria-labelledby="Login">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -62,6 +40,7 @@
         </div>
       </div>
     </div>
+%#js#%
     <script>
     var type = window.location.hash.substr(1);
     if (type == "login") {

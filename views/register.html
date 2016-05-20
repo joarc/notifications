@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+%#meta#%
+    <title>Register - N!</title>
+%#css#%
+  </head>
+  <body>
+%#navbar_notloggedin#%
+    <div class="container">
+      <div class="panel panel-default">
+        <form method="post" action="">
+          <div class="form-group" id="username_group">
+            <label class="control-label" for="username">Username:</label>
+            <input type="text" name="username" id="username" placeholder="Username" class="form-control" autofocus required>
+          </div>
+          <div class="form-group" id="password_group">
+            <label class="control-label" for="password">Password:</label>
+            <input type="password" name="password" id="password" placeholder="Password" class="form-control" required>
+          </div>
+          <div class="form-group" id="passwordconfirm_group">
+            <label class="control-label" for="passwordconfirm">Confirm Password:</label>
+            <input type="password" name="passwordconfirm" id="passwordconfirm" placeholder="Confirm Password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-block btn-success">Register</button>
+        </form>
+      </div>
+    </div>
+%#js#%
+  </body>
+</html>

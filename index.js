@@ -21,6 +21,7 @@ var ws = require("nodejs-websocket");
 var casual = require("casual");
 var fs = require("fs");
 var cookie = require("cookie");
+var password = require("bcrypt-nodejs");
 
 // Start express
 var app = express();
@@ -32,8 +33,9 @@ var secret = "asdfasdf";
 
 // Template engine content
 var enginedata = {
-  css:                fs.readFileSync("./views/blocks/css.html");
-  js:                 fs.readFileSync("./views/blocks/js.html");
+  css:                fs.readFileSync("./views/blocks/css.html"),
+  js:                 fs.readFileSync("./views/blocks/js.html"),
+  meta:               fs.readFileSync("./views/blocks/meta.html"),
   navbar_notloggedin: fs.readFileSync("./views/blocks/navbar_notloggedin.html"),
   navbar_loggedin:    fs.readFileSync("./views/blocks/navbar_loggedin.html"),
   footer:             fs.readFileSync("./views/blocks/footer.html")
@@ -46,6 +48,7 @@ app.engine("html", function(fp, o, callback){
     var rendered = c.toString();
         rendered = replaceAll(rendered, "%#css#%", enginedata.css);
         rendered = replaceAll(rendered, "%#js#%", enginedata.js);
+        rendered = replaceAll(rendered, "%#meta#%", enginedata.meta);
         rendered = replaceAll(rendered, "%#navbar_loggedin#%", enginedata.navbar_loggedin);
         rendered = replaceAll(rendered, "%#navbar_notloggedin#%", enginedata.navbar_notloggedin);
         rendered = replaceAll(rendered, "%#footer#%", enginedata.footer);
@@ -82,11 +85,7 @@ function grs(length) {
   return s;
 }
 function checkPassword(pass, dbpass) {
-  if (pass == dbpass) {
-    return true;
-  } else {
-    return false;
-  }
+  return password.compareSync(pass, dbpass);
 }
 function replaceAll(target, search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
@@ -117,17 +116,42 @@ db.open(function(e, d){
 // TODO: Remove Debug stuff
 app.get("/t", function(req,res){
   db.collection("keys").remove({});
-  res.send("asdf");
+  res.send("emptied keys database");
 });
 app.get("/reg", function(req, res){
-  db.collection('users').insertOne({username: "joarc", password: "asdfasdf"});
+  db.collection('users').insertOne({username: "joarc", password: password.hashSync("asdfasdf")});
   res.send("adding joarc:asdfasdf");
 });
+app.get("/regd", function(req, res){
+  db.collection("users").remove({});
+  res.send("emptied users database");
+})
 
 // Pages
 app.get("/logout", function(req, res){
   req.session.destroy();
   res.redirect("/login");
+});
+
+app.get("/register", function(req, res){
+  res.render("register", {});
+});
+app.post("/register",  function(req, res){
+  var data = req.body;
+  data.username = data.username.toLowerCase();
+  var userDB = db.collection("users");
+  userDB.findOne({username:data.username}, {}, function(e,o){
+    if (o == null) {
+      if (o.password == o.passwordconfirm) {
+        userDB.insertOne({username: o.username, password: password.hashSync(o.password), firstname: "", lastname: "", company: ""})
+        res.send({success: true});
+      } else {
+        res.send({success: false, msg: "Passwords do not match"});
+      }
+    } else {
+      res.send({success: false, msg: "Username already taken"});
+    }
+  });
 });
 
 app.get("/login", function(req, res){
