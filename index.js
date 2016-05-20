@@ -134,9 +134,11 @@ app.get("/logout", function(req, res){
 });
 
 app.get("/register", function(req, res){
+  if (req.session.authenticated) res.location("/");
   res.render("register", {});
 });
 app.post("/register",  function(req, res){
+  if (req.session.authenticated) res.send({success: false, msg: "Already authenticated"});
   var data = req.body;
   data.username = data.username.toLowerCase();
   var userDB = db.collection("users");
@@ -155,10 +157,12 @@ app.post("/register",  function(req, res){
 });
 
 app.get("/login", function(req, res){
+  if (req.session.authenticated) res.location("/");
   res.render("login", {});
 });
 app.post("/login", function(req, res){
-  if (db.collection('users').findOne({username:req.body.username}, {}, function(e,o){
+  if (req.session.authenticated) res.send({success: false, msg: "Already authenticated"});
+  db.collection('users').findOne({username:req.body.username}, {}, function(e,o){
     if (o == null) {
       req.session.authenticated = false;
       req.session.data = {};
@@ -176,7 +180,7 @@ app.post("/login", function(req, res){
         res.send({success: false});
       }
     }
-  }));
+  });
 });
 
 app.get("/", function(req, res){
