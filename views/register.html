@@ -9,23 +9,76 @@
 %#navbar_notloggedin#%
     <div class="container">
       <div class="panel panel-default">
-        <form method="post" action="">
-          <div class="form-group" id="username_group">
-            <label class="control-label" for="username">Username:</label>
-            <input type="text" name="username" id="username" placeholder="Username" class="form-control" autofocus required>
-          </div>
-          <div class="form-group" id="password_group">
-            <label class="control-label" for="password">Password:</label>
-            <input type="password" name="password" id="password" placeholder="Password" class="form-control" required>
-          </div>
-          <div class="form-group" id="passwordconfirm_group">
-            <label class="control-label" for="passwordconfirm">Confirm Password:</label>
-            <input type="password" name="passwordconfirm" id="passwordconfirm" placeholder="Confirm Password" class="form-control" required>
-          </div>
-          <button type="submit" class="btn btn-block btn-success">Register</button>
-        </form>
+        <div class="panel-body">
+          <form method="post" action="" id="register">
+            <div class="form-group" id="username_group">
+              <label class="control-label" for="username">Username:</label>
+              <input type="text" name="username" id="username" placeholder="Username" class="form-control" autofocus required>
+            </div>
+            <div id="passwords">
+              <div class="form-group password_input" id="password_group">
+                <label class="control-label" for="password">Password:</label>
+                <input type="password" name="password" id="password" placeholder="Password" class="form-control" required>
+              </div>
+              <div class="form-group password_input" id="passwordconfirm_group">
+                <label class="control-label" for="passwordconfirm">Confirm Password:</label>
+                <input type="password" name="passwordconfirm" id="passwordconfirm" placeholder="Confirm Password" class="form-control" required>
+                <span class="help-block" id="password_msg"></span>
+              </div>
+            </div>
+            <button type="button" onclick="login();" class="btn btn-block btn-success">Register</button>
+          </form>
+        </div>
       </div>
     </div>
 %#js#%
+  <script>
+  $("#passwords").keyup(function(data){
+    var password = $("#passwords #password").val();
+    var passwordconfirm = $("#passwords #passwordconfirm").val();
+    var char = ["!", "@", "#", "$", "%", "&", "?"];
+    var badpass = false;
+
+    if (password == null || password == "" || passwordconfirm == null || passwordconfirm == "") {
+      console.log("trst");
+      $("#passwords").find(".password_input").removeClass("has-error has-warning has-success");
+      return;
+    }
+
+    if (password.length < 12) badpass = true;
+    for (var i = 0; i <= char.length; i++) {
+      if (password.split().indexOf(char[i]) >= 0) {
+        badpass = true;
+      }
+    }
+    if (! password.match(/(?=.*\d)(?=.*[a-z])(?=.*[A-Z])+/)) badpass = true;
+
+    if (badpass) {
+      $("#password_group").addClass("has-warning");
+      $("#passwordconfirm_group").addClass("has-warning");
+    }
+
+    if (password == passwordconfirm) {
+      $("#password_group").removeClass("has-error has-success");
+      $("#passwordconfirm_group").removeClass("has-error has-success");
+      if ($("#password_group").hasClass("has-warning") && $("#passwordconfirm_group").hasClass("has-warning")) {
+        $("#password_msg").text("Passwords match (but do not follow the password guidelines)!");
+      } else {
+        $("#password_group").addClass("has-success");
+        $("#passwordconfirm_group").addClass("has-success");
+        $("#password_msg").text("Passwords match!");
+      }
+    } else {
+      $("#password_group").removeClass("has-warning has-success");
+      $("#passwordconfirm_group").removeClass("has-warning has-success");
+      $("#password_group").addClass("has-error");
+      $("#passwordconfirm_group").addClass("has-error");
+      $("#password_msg").text("Passwords do not match!");
+    }
+  });
+  function register(){
+    //var username =
+  }
+  </script>
   </body>
 </html>
