@@ -32,9 +32,11 @@ var secret = "asdfasdf";
 
 // Template engine content
 var enginedata = {
-  navbar_notloggedin: fs.readFileSync("./blocks/navbar_notloggedin.html"),
-  navbar_loggedin:    fs.readFileSync("./blocks/navbar_loggedin.html"),
-  footer:             fs.readFileSync("./blocks/footer.html")
+  css:                fs.readFileSync("./views/blocks/css.html");
+  js:                 fs.readFileSync("./views/blocks/js.html");
+  navbar_notloggedin: fs.readFileSync("./views/blocks/navbar_notloggedin.html"),
+  navbar_loggedin:    fs.readFileSync("./views/blocks/navbar_loggedin.html"),
+  footer:             fs.readFileSync("./views/blocks/footer.html")
 };
 
 // Template engine
@@ -42,10 +44,12 @@ app.engine("html", function(fp, o, callback){
   fs.readFile(fp, function(err, c){
     if (err) return callback(new Error(err));
     var rendered = c.toString();
+        rendered = replaceAll(rendered, "%#css#%", enginedata.css);
+        rendered = replaceAll(rendered, "%#js#%", enginedata.js);
         rendered = replaceAll(rendered, "%#navbar_loggedin#%", enginedata.navbar_loggedin);
         rendered = replaceAll(rendered, "%#navbar_notloggedin#%", enginedata.navbar_notloggedin);
+        rendered = replaceAll(rendered, "%#footer#%", enginedata.footer);
         rendered = replaceAll(rendered, "%username%", o.username);
-      //rendered = replaceAll(rendered, "%wsauthkey%", o.key);
     return callback(null, rendered);
   });
 });
@@ -65,7 +69,9 @@ app.use(session({
 }));
 app.disable("x-powered-by");
 app.enable("trust proxy");
-app.use("/static", express.static("static"));
+app.use("/css", express.static("static/css"));
+app.use("/js", express.static("static/js"));
+app.use("/fonts", express.static("static/fonts"));
 
 // Generic Functions
 function grs(length) {
