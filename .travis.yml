@@ -5,6 +5,7 @@ branches:
     - beta
     - alpha
     - experimental
+    - production
 node_js:
   - "6"
   - "0.12"
