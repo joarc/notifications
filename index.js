@@ -127,7 +127,7 @@ app.get("/regd", function(req, res){
   res.send("emptied users database");
 })
 
-// Pages
+// Login Process
 app.get("/logout", function(req, res){
   req.session.destroy();
   res.redirect("/login#loggedout");
@@ -183,6 +183,16 @@ app.post("/login", function(req, res){
   });
 });
 
+// Profile
+app.get("/profile", function(req, res){
+  if (req.session.authenticated == true) {
+    res.render("profile", {username: req.session.data.username});
+  } else {
+    res.location("/login");
+  }
+});
+
+// Home Page
 app.get("/", function(req, res){
   if (req.session.authenticated !== undefined) {
     if (req.session.authenticated) {
