@@ -130,7 +130,7 @@ app.get("/regd", function(req, res){
 // Pages
 app.get("/logout", function(req, res){
   req.session.destroy();
-  res.redirect("/login");
+  res.redirect("/login#loggedout");
 });
 
 app.get("/register", function(req, res){
@@ -144,8 +144,8 @@ app.post("/register",  function(req, res){
   var userDB = db.collection("users");
   userDB.findOne({username:data.username}, {}, function(e,o){
     if (o == null) {
-      if (o.password == o.passwordconfirm) {
-        userDB.insertOne({username: o.username, password: password.hashSync(o.password), firstname: "", lastname: "", company: ""})
+      if (data.password == data.confirmpassword) {
+        userDB.insertOne({username: data.username, password: password.hashSync(data.password), firstname: "", lastname: "", company: ""})
         res.send({success: true});
       } else {
         res.send({success: false, msg: "Passwords do not match"});

@@ -4,35 +4,47 @@
 %#meta#%
     <title>Register - N!</title>
 %#css#%
+    <link href="/css/signin.css" rel="stylesheet">
   </head>
   <body>
-%#navbar_notloggedin#%
     <div class="container">
-      <div class="panel panel-default">
-        <div class="panel-body">
-          <form method="post" action="" id="register">
-            <div class="form-group" id="username_group">
-              <label class="control-label" for="username">Username:</label>
-              <input type="text" name="username" id="username" placeholder="Username" class="form-control" autofocus required>
-            </div>
-            <div id="passwords">
-              <div class="form-group password_input" id="password_group">
-                <label class="control-label" for="password">Password:</label>
-                <input type="password" name="password" id="password" placeholder="Password" class="form-control" required>
-              </div>
-              <div class="form-group password_input" id="passwordconfirm_group">
-                <label class="control-label" for="passwordconfirm">Confirm Password:</label>
-                <input type="password" name="passwordconfirm" id="passwordconfirm" placeholder="Confirm Password" class="form-control" required>
-                <span class="help-block" id="password_msg"></span>
-              </div>
-            </div>
-            <button type="button" onclick="login();" class="btn btn-block btn-success">Register</button>
-          </form>
-        </div>
+      <div class="alert alert-danger alert-dismissible hidden" id="error">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <span class="glyphicon glyphicon-warning-sign"></span> <span id="error-text"></span>
       </div>
+      <form class="form-signin" id="register" method="post" action="/login">
+        <h2 class="form-signin-heading"><span class="glyphicon glyphicon-log-in"></span> Register</h2>
+        <div class="form-group" id="username_group">
+          <label class="control-label" for="username">Username:</label>
+          <input type="text" name="username" id="username" placeholder="Username" class="form-control" autofocus required>
+        </div>
+        <div id="passwords">
+          <div class="form-group password_input" id="password_group">
+            <label class="control-label" for="password">Password:</label>
+            <input type="password" name="password" id="password" placeholder="Password" class="form-control" required>
+          </div>
+          <div class="form-group password_input" id="passwordconfirm_group">
+            <label class="control-label" for="passwordconfirm">Confirm Password:</label>
+            <input type="password" name="passwordconfirm" id="passwordconfirm" placeholder="Confirm Password" class="form-control" required>
+            <span class="help-block" id="password_msg"></span>
+          </div>
+        </div>
+        <button type="button" onclick="register();" class="btn btn-block btn-success btn-lg">Register</button>
+        <br><br>
+        <h4 class="text-center"><a href="/login">Already have an account? Sign in!</a></h4>
+        <br>
+        <h4 class="text-center"><a href="/">Back to Home <span class="glyphicon glyphicon-home"></span></a></h4>
+      </form>
     </div>
 %#js#%
   <script>
+  $("#register input").keypress(function(e){
+    if (e.which == 13){
+      register();
+    }
+  });
   $("#passwords").keyup(function(data){
     var password = $("#passwords #password").val();
     var passwordconfirm = $("#passwords #passwordconfirm").val();
@@ -77,7 +89,41 @@
     }
   });
   function register(){
-    //var username =
+    var username = $("#username").val();
+    var password = $("#password").val();
+    var confirmpassword = $("#passwordconfirm").val();
+    var regdata = {username: username, password: password, confirmpassword: confirmpassword};
+    var pwerr = "";
+
+    if (password.length < 8) {
+      pwerr = "Password is too short! It must be at least 8 characters";
+    } else if (password == "") {
+      pwerr = "Password may not be empty!";
+    }
+
+    if (pwerr != "") {
+      $("#error").removeClass("hidden").hide();
+      $("#error-text").text(pwerr);
+      $("#error").fadeIn(1000, function(){
+        setTimeout(function(){
+          $("#error").fadeOut(2500);
+        }, 10000);
+      });
+    }
+
+    $.ajax({url: "/register", method: "POST", dataType: "json", data: regdata}).always(function(res){
+      if (res.success) {
+        window.location.href = "/login#registration-success";
+      } else {
+        $("#error").removeClass("hidden").hide();
+        $("#error #error-text").text(res.msg);
+        $("#error").fadeIn(1000, function(){
+          setTimeout(function(){
+            $("#error").fadeOut(2500);
+          }, 10000);
+        });
+      }
+    });
   }
   </script>
   </body>

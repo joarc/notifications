@@ -21,62 +21,7 @@
       </div>
     </div>
 %#footer#%
-    <div class="modal fade" id="login" tabindex="-1" role="dialog" aria-labelledby="Login">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="Login"><span class="glyphicon glyphicon-log-in"></span> Login</h4>
-          </div>
-          <div class="modal-body">
-            <form method="post" action="/login">
-              <label for="login-username" class="sr-only">Username: </label>
-              <input type="text" id="login-username" class="form-control" placeholder="Username" name="username" required autofocus><br>
-              <label for="login-password" class="sr-only">Password</label>
-              <input type="password" id="login-password" class="form-control" placeholder="Password" name="password" required><br>
-              <button class="btn btn-lg btn-primary btn-block" type="button" onclick="login();">Sign in</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
 %#js#%
-    <script>
-    var type = window.location.hash.substr(1);
-    if (type == "login") {
-      $("#login").modal("show");
-    }
-    $('#login').on('shown.bs.modal', function(){
-      $('#login-username').focus();
-      $("#login input").keypress(function(e){
-        if (e.which == 13){
-          login();
-        }
-      });
-    });
-    function login(){
-      var loginusername = $("#login-username").val();
-      var loginpassword = $("#login-password").val();
-      //var logindata = JSON.stringify({username: loginusername, password: loginpassword});
-      var logindata = {username: loginusername, password: loginpassword};
-      $("#login").modal("hide");
-      $("#login-password").val(null);
-      var ajax = $.ajax({url: "/login", method: "POST", dataType: "json", data: logindata});
-
-      ajax.always(function(res){
-        if (res.success) {
-          window.location.reload(true);
-        } else {
-          $("#login-error").removeClass("hidden").hide();
-          $("#login-error").text(res.msg);
-          $("#login-error").fadeIn(1000, function(){
-            setTimeout(function(){
-              $("#login-error").fadeOut(2000);
-            }, 4000);
-          });
-        }
-      });
-    }
     </script>
   </body>
 </html>
