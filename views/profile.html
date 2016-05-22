@@ -11,10 +11,13 @@
     <div class="container">
       <div class="panel panel-default">
         <div class="panel-body">
-          <form method="post" action="" id="profile">
+          <form method="post" action="/profile" id="profile">
             <div class="profile-row">
-              <input type="text" name="firstname" class="form-control" placeholder="Firstname"><input type="text" name="lastname" class="form-control" placeholder="Lastname"><input type="text" name="lastname" class="form-control" placeholder="Lastname"><input type="text" name="lastname" class="form-control" placeholder="Lastname">
+              <label for="firstname">First-</label>&nbsp;&amp;&nbsp;<label for="lastname">Lastname</label>:<br>
+              <input type="text" name="firstname" id="firstname" class="form-control" placeholder="Firstname" value="%firstname%"><input type="text" name="lastname" id="lastname" class="form-control" placeholder="Lastname" value="%lastname%">
             </div>
+            <br><br>
+            <button type="submit" class="btn btn-primary">Save</button>
           </form>
         </div>
       </div>

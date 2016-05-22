@@ -41,6 +41,23 @@ var enginedata = {
   footer:             fs.readFileSync("./views/blocks/footer.html")
 };
 
+// MongoDB
+var db = new Mongo("notifications", new MongoServer("localhost", 27017, {auto_reconnect: true}), {w: 1});
+db.open(function(e, d){
+  if (e) {
+    console.log(e);
+  } else {
+    console.log("MongoDB: Connected to database notifications");
+    // Load mongo user->key
+    db.collection("users").find({}).toArray().then(function(data){
+      data.forEach(function(v,i){
+        //console.log(i, v);
+        wsusername[v.username] = v.key;
+      });
+    });
+  }
+});
+
 // Template engine
 app.engine("html", function(fp, o, callback){
   fs.readFile(fp, function(err, c){
@@ -52,8 +69,39 @@ app.engine("html", function(fp, o, callback){
         rendered = replaceAll(rendered, "%#navbar_loggedin#%", enginedata.navbar_loggedin);
         rendered = replaceAll(rendered, "%#navbar_notloggedin#%", enginedata.navbar_notloggedin);
         rendered = replaceAll(rendered, "%#footer#%", enginedata.footer);
-        rendered = replaceAll(rendered, "%username%", o.username);
-    return callback(null, rendered);
+        //console.log(o, "engine input");
+        db.collection("users").findOne({username: o.username}, {}, function(dbe,dbo){
+          //console.log(dbo, dbe, "render engine");
+          if (dbo != null) {
+            // firstname
+            if (dbo.firstname != null) {
+              rendered = replaceAll(rendered, "%firstname%", dbo.firstname);
+            } else {
+              rendered = replaceAll(rendered, "%firstname%", "");
+            }
+
+            // lastname
+            if (dbo.lastname != null) {
+              rendered = replaceAll(rendered, "%lastname%", dbo.lastname);
+            } else {
+              rendered = replaceAll(rendered, "%lastname%", "");
+            }
+
+            // Switch username for firstname+lastname or firstname or username
+            if (dbo.firstname != null && dbo.lastname != null) {
+              rendered = replaceAll(rendered, "%username%", dbo.firstname+" "+dbo.lastname);
+            } else if (dbo.firstname != null) {
+              rendered = replaceAll(rendered, "%username%", dbo.firstname);
+            } else {
+              rendered = replaceAll(rendered, "%username%", dbo.username);
+            }
+          } else {
+            rendered = replaceAll(rendered, "%username%", o.username);
+            rendered = replaceAll(rendered, "%firstname%", "");
+            rendered = replaceAll(rendered, "%lastname%", "");
+          }
+          return callback(null, rendered);
+        });
   });
 });
 
@@ -90,28 +138,6 @@ function checkPassword(pass, dbpass) {
 function replaceAll(target, search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
 };
-
-// MongoDB
-var db = new Mongo("notifications", new MongoServer("localhost", 27017, {auto_reconnect: true}), {w: 1});
-db.open(function(e, d){
-  if (e) {
-    console.log(e);
-  } else {
-    console.log("MongoDB: Connected to database notifications");
-    // Load mongo user->key
-    db.collection("keys").find({}).toArray().then(function(data){
-      data.forEach(function(v,i){
-        console.log(i, v);
-        wsusername[v.username] = v.key;
-      });
-      /*setInterval(function(){
-        db.collection("keys").find({}).toArray().then(function(udata){
-          //console.log(udata);
-        });
-      }, 5*1000);*/
-    });
-  }
-});
 
 // TODO: Remove Debug stuff
 app.get("/t", function(req,res){
@@ -188,8 +214,29 @@ app.get("/profile", function(req, res){
   if (req.session.authenticated == true) {
     res.render("profile", {username: req.session.data.username});
   } else {
-    res.location();
+    res.location("/login#loggedout");
     res.end();
+  }
+});
+app.post("/profile", function(req, res){
+  if (req.session.authenticated == true) {
+    var data = req.body;
+    db.collection("users").findOne({username: req.session.data.username}, {}, function(e,o){
+      if (o != null) {
+        db.collection("users").updateOne({username: req.session.data.username}, {firstname: data.firstname, lastname: data.lastname, company: data.company, username: req.session.data.username, password: o.password}, null, function(e2,o2){
+          /*console.log("inserted data");
+          console.log(e2);
+          console.log("inserted datao");
+          console.log(o2);*/
+        });
+        res.render("profile", {username: req.session.data.username});
+      } else {
+        //console.log(e, o, "o is null");
+        res.render("profile", {username: req.session.data.username});
+      }
+    });
+  } else {
+
   }
 });
 
@@ -218,7 +265,7 @@ var server = ws.createServer(function(conn){
   conn.username = null;
   conn.on("text", function(str){
     str = JSON.parse(str);
-    console.log(str);
+    //console.log(str);
     if (str.type == "authenticate") {
       if (conn.authenticated == false) {
         if (conn.headers.cookie) {
