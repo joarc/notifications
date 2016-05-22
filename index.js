@@ -188,7 +188,8 @@ app.get("/profile", function(req, res){
   if (req.session.authenticated == true) {
     res.render("profile", {username: req.session.data.username});
   } else {
-    res.location("/login");
+    res.location();
+    res.end();
   }
 });
 
