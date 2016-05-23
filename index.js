@@ -22,6 +22,7 @@ var casual = require("casual");
 var fs = require("fs");
 var cookie = require("cookie");
 var password = require("bcrypt-nodejs");
+var compression = require('compression');
 
 // Start express
 var app = express();
@@ -30,6 +31,7 @@ var app = express();
 var mongopath = "mongodb://localhost:27017/notifications";
 var wsusername = [];
 var secret = "asdfasdf";
+var cookieName = "sessionIdent";
 
 // Template engine content
 var enginedata = {
@@ -48,8 +50,8 @@ db.open(function(e, d){
     console.log(e);
   } else {
     console.log("MongoDB: Connected to database notifications");
-    // Load mongo user->key
-    db.collection("users").find({}).toArray().then(function(data){
+    // Load mongo session keys
+    db.collection("keys").find({}).toArray().then(function(data){
       data.forEach(function(v,i){
         //console.log(i, v);
         wsusername[v.username] = v.key;
@@ -66,52 +68,67 @@ app.engine("html", function(fp, o, callback){
         rendered = replaceAll(rendered, "%#css#%", enginedata.css);
         rendered = replaceAll(rendered, "%#js#%", enginedata.js);
         rendered = replaceAll(rendered, "%#meta#%", enginedata.meta);
-        rendered = replaceAll(rendered, "%#navbar_loggedin#%", enginedata.navbar_loggedin);
-        rendered = replaceAll(rendered, "%#navbar_notloggedin#%", enginedata.navbar_notloggedin);
         rendered = replaceAll(rendered, "%#footer#%", enginedata.footer);
         //console.log(o, "engine input");
-        db.collection("users").findOne({username: o.username}, {}, function(dbe,dbo){
-          //console.log(dbo, dbe, "render engine");
-          if (dbo != null) {
-            // firstname
-            if (dbo.firstname != null) {
-              rendered = replaceAll(rendered, "%firstname%", dbo.firstname);
-            } else {
-              rendered = replaceAll(rendered, "%firstname%", "");
-            }
+        if (o.username != undefined && o.username != null) {
+          // navbar
+          if (wsusername[o.username] != null) {
+            rendered = replaceAll(rendered, "%#navbar#%", enginedata.navbar_loggedin);
+          } else {
+            rendered = replaceAll(rendered, "%#navbar#%", enginedata.navbar_notloggedin);
+          }
+          // Database info
+          db.collection("users").findOne({username: o.username}, {}, function(dbe,dbo){
+            //console.log(dbo, dbe, "render engine");
+            if (dbo != null) {
+              // firstname
+              if (dbo.firstname != null) {
+                rendered = replaceAll(rendered, "%firstname%", dbo.firstname);
+              } else {
+                rendered = replaceAll(rendered, "%firstname%", "");
+              }
 
-            // lastname
-            if (dbo.lastname != null) {
-              rendered = replaceAll(rendered, "%lastname%", dbo.lastname);
+              // lastname
+              if (dbo.lastname != null) {
+                rendered = replaceAll(rendered, "%lastname%", dbo.lastname);
+              } else {
+                rendered = replaceAll(rendered, "%lastname%", "");
+              }
+
+              // Switch username for firstname+lastname or firstname or username
+              if (dbo.firstname != null && dbo.lastname != null) {
+                rendered = replaceAll(rendered, "%name%", dbo.firstname+" "+dbo.lastname);
+              } else if (dbo.firstname != null) {
+                rendered = replaceAll(rendered, "%name%", dbo.firstname);
+              } else {
+                rendered = replaceAll(rendered, "%name%", dbo.username);
+              }
+
+              // username
+              rendered = replaceAll(rendered, "%username%", o.username);
             } else {
+              rendered = replaceAll(rendered, "%username%", o.username);
+              rendered = replaceAll(rendered, "%firstname%", "");
               rendered = replaceAll(rendered, "%lastname%", "");
             }
-
-            // Switch username for firstname+lastname or firstname or username
-            if (dbo.firstname != null && dbo.lastname != null) {
-              rendered = replaceAll(rendered, "%username%", dbo.firstname+" "+dbo.lastname);
-            } else if (dbo.firstname != null) {
-              rendered = replaceAll(rendered, "%username%", dbo.firstname);
-            } else {
-              rendered = replaceAll(rendered, "%username%", dbo.username);
-            }
-          } else {
-            rendered = replaceAll(rendered, "%username%", o.username);
-            rendered = replaceAll(rendered, "%firstname%", "");
-            rendered = replaceAll(rendered, "%lastname%", "");
-          }
+            return callback(null, rendered);
+          });
+        } else {
+          rendered = replaceAll(rendered, "%#navbar#%", enginedata.navbar_notloggedin);
           return callback(null, rendered);
-        });
+        }
   });
 });
 
 // Enable special things with express
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(compression());
 app.set('views', './views');
 app.set('view engine', "html");
 app.use(session({
   secret: secret,
+  name: cookieName,
   resave: true,
   saveUninitialized: true,
   unset: "destroy",
@@ -137,7 +154,10 @@ function checkPassword(pass, dbpass) {
 }
 function replaceAll(target, search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
-};
+}
+function isInArray(value, array) {
+  return array.indexOf(value) > -1;
+}
 
 // TODO: Remove Debug stuff
 app.get("/t", function(req,res){
@@ -183,10 +203,13 @@ app.post("/register",  function(req, res){
 });
 
 app.get("/login", function(req, res){
-  if (req.session.authenticated) res.location("/");
+  if (req.session.authenticated) res.redirect("/dashboard");
+  console.log("loaded get loginpage");
+  console.log(req.session.authenticated);
   res.render("login", {});
 });
 app.post("/login", function(req, res){
+  console.log("loaded post loginpage");
   if (req.session.authenticated) res.send({success: false, msg: "Already authenticated"});
   db.collection('users').findOne({username:req.body.username}, {}, function(e,o){
     if (o == null) {
@@ -195,11 +218,12 @@ app.post("/login", function(req, res){
       res.send({success: false});
     } else {
       if (checkPassword(req.body.password, o.password)) {
+        console.log("login success");
         req.session.authenticated = true;
         req.session.data = {username: o.username};
         wsusername[o.username] = req.session.id;
         db.collection("keys").update({username: o.username}, {username: o.username, key: req.session.id}, {upsert: true});
-        res.send({success: true, key: req.session.id});
+        res.send({success: true});
       } else {
         req.session.authenticated = false;
         req.session.data = {};
@@ -240,16 +264,57 @@ app.post("/profile", function(req, res){
   }
 });
 
+// Dashboard
+app.get("/dashboard", function(req, res){
+  if (req.session.authenticated !== undefined) {
+    if (req.session.authenticated) {
+      res.render("dashboard", {username: req.session.data.username});
+    } else {
+      res.redirect("/login#notloggedin")
+      res.end();
+    }
+  } else {
+    res.redirect("/login#notloggedin");
+    res.end();
+  }
+});
+
+// About
+app.get("/about", function(req, res){
+  if (req.session.authenticated !== undefined) {
+    if (req.session.authenticated) {
+      res.render("about", {username: req.session.data.username});
+    } else {
+      res.render("about", {});
+    }
+  } else {
+    res.render("about", {});
+  }
+});
+
+// Pricing
+app.get("/pricing", function(req, res){
+  if (req.session.authenticated !== undefined) {
+    if (req.session.authenticated) {
+      res.render("pricing", {username: req.session.data.username});
+    } else {
+      res.render("pricing", {});
+    }
+  } else {
+    res.render("pricing", {});
+  }
+});
+
 // Home Page
 app.get("/", function(req, res){
   if (req.session.authenticated !== undefined) {
     if (req.session.authenticated) {
-      res.render("index_loggedin", {username: req.session.data.username});
+      res.render("index", {username: req.session.data.username});
     } else {
-      res.render("index_notloggedin", {});
+      res.render("index", {});
     }
   } else {
-    res.render("index_notloggedin", {});
+    res.render("index", {});
   }
 });
 
@@ -265,11 +330,12 @@ var server = ws.createServer(function(conn){
   conn.username = null;
   conn.on("text", function(str){
     str = JSON.parse(str);
-    //console.log(str);
+    console.log(str);
     if (str.type == "authenticate") {
       if (conn.authenticated == false) {
         if (conn.headers.cookie) {
-          var sid = cookieParser.signedCookie(cookie.parse(conn.headers.cookie)['connect.sid'], secret);
+          var sid = cookieParser.signedCookie(cookie.parse(conn.headers.cookie)[cookieName], secret);
+          console.log(sid, wsusername[str.msg.username], "sid");
           if (wsusername[str.msg.username] == sid) {
             conn.authenticated = true;
             conn.username = str.msg.username;

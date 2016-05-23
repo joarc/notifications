@@ -25,6 +25,7 @@
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.15.1",
     "casual": "^1.5.3",
+    "compression": "^1.6.2",
     "connect": "^3.4.1",
     "connect-mongo": "^1.2.0",
     "cookie": "^0.2.3",

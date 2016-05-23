@@ -15,7 +15,14 @@
         <span class="glyphicon glyphicon-minus-sign"></span>
          Login Failed: Incorrect username or password!
       </div>
-      <div class="alert alert-success alert-dismissible hidden" id="logged-out">
+      <div class="alert alert-danger alert-dismissible hidden" id="notloggedin">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <span class="glyphicon glyphicon-warning-sign"></span>
+         You cannot view that page: You are not logged in!
+      </div>
+      <div class="alert alert-info alert-dismissible hidden" id="logged-out">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -53,6 +60,8 @@
       $("#logged-out").removeClass("hidden");
     } else if (type == "registration-success") {
       $("#registration-success").removeClass("hidden");
+    } else if (type == "notloggedin") {
+      $("#notloggedin").removeClass("hidden");
     }
     $("#login input").keypress(function(e){
       if (e.which == 13){
@@ -68,7 +77,7 @@
       $.ajax({url: "/login", method: "POST", dataType: "json", data: logindata}).always(function(res){
         console.log(res);
         if (res.success) {
-          window.location.href = "/";
+          window.location.href = "/dashboard";
         } else {
           $("#login-error").removeClass("hidden").hide();
           $("#login-error").text(res.msg);
